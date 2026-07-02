@@ -1,0 +1,5 @@
+pcb_led_pin: 4
+pcb_button_pin: 27
+hall_sensor_pin: 5
+sda_pin: 2
+scl_pin: 3

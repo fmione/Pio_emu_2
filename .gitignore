@@ -1,0 +1,5 @@
+.pioreactor/storage/
+.pioreactor/config.ini
+pioreactor.log
+__pycache__/
+*.pyc

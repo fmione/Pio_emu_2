@@ -1,0 +1,31 @@
+experiment_profile_name: simulate
+
+metadata:
+  author: "PioDocker"
+  description: "Simulación básica: stirring 500 RPM, temp 30°C, OD reading LED 80%"
+
+common:
+  jobs:
+    stirring:
+      actions:
+        - type: start
+          t: 0
+          options:
+            target_rpm: 500
+            use_rpm: true
+
+    od_reading:
+      actions:
+        - type: start
+          t: 0
+          options:
+            interval: 5.0
+            ir_led_intensity: 80
+
+    temperature_automation:
+      actions:
+        - type: start
+          t: 0
+          options:
+            automation_name: thermostat
+            target_temperature: 30

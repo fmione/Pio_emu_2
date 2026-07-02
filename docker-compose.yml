@@ -1,0 +1,36 @@
+services:
+  mosquitto:
+    image: eclipse-mosquitto:latest
+    ports:
+      - "1883:1883"
+      - "9001:9001"
+    volumes:
+      - ./mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf
+      - mosquitto_data:/mosquitto/data
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    hostname: pioreactor
+    ports:
+      - "2222:22"
+      - "4999:4999"
+    volumes:
+      - ./.pioreactor:/home/pioreactor/.pioreactor
+      - pioreactor_cache:/tmp/pioreactor_cache
+    environment:
+      HOSTNAME: pioreactor
+      TESTING: "1"
+      GLOBAL_CONFIG: /home/pioreactor/.pioreactor/config.ini
+      DOT_PIOREACTOR: /home/pioreactor/.pioreactor
+      RUN_PIOREACTOR: /tmp/pioreactor_cache
+      PLUGINS_DEV: /home/pioreactor/plugins_dev
+    depends_on:
+      - mosquitto
+    restart: unless-stopped
+
+volumes:
+  mosquitto_data:
+  pioreactor_cache:

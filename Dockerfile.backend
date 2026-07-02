@@ -1,0 +1,52 @@
+FROM python:3.13-slim
+
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        git \
+        mosquitto-clients \
+        gcc \
+        openssh-server \
+        sudo \
+    && rm -rf /var/lib/apt/lists/* && \
+    useradd -m -s /bin/bash pioreactor && \
+    echo "pioreactor:pioINGAR" | chpasswd && \
+    echo "pioreactor ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers && \
+    sed -i 's/^#PasswordAuthentication.*/PasswordAuthentication yes/' /etc/ssh/sshd_config && \
+    ssh-keygen -A
+
+WORKDIR /app
+
+RUN git clone --depth 1 https://github.com/Pioreactor/pioreactor.git .
+
+RUN pip install --no-cache-dir -e "core/.[leader,worker]" -r requirements/requirements.txt pyyaml
+
+COPY local_app.py /app/local_app.py
+
+RUN mkdir -p /home/pioreactor/.pioreactor/storage \
+             /home/pioreactor/.pioreactor/plugins \
+             /home/pioreactor/.pioreactor/exportable_datasets \
+             /home/pioreactor/.pioreactor/experiment_profiles \
+             /tmp/pioreactor_cache/cache && \
+    chown -R pioreactor:pioreactor /home/pioreactor/.pioreactor
+
+ENV TESTING=1
+ENV GLOBAL_CONFIG=/home/pioreactor/.pioreactor/config.ini
+ENV DOT_PIOREACTOR=/home/pioreactor/.pioreactor
+ENV RUN_PIOREACTOR=/tmp/pioreactor_cache
+ENV PLUGINS_DEV=/home/pioreactor/plugins_dev
+ENV PIO_EXECUTABLE=/usr/local/bin/pio
+ENV PIOS_EXECUTABLE=/usr/local/bin/pios
+
+ENV HARDWARE=1.2
+ENV FIRMWARE=0.5
+ENV BLINKA_FORCECHIP=BCM2XXX
+ENV BLINKA_FORCEBOARD=RASPBERRY_PI_3A_PLUS
+ENV MODEL_NAME=pioreactor_20ml
+ENV MODEL_VERSION=1.1
+
+EXPOSE 4999
+
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+ENTRYPOINT ["/entrypoint.sh"]
