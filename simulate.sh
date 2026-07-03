@@ -13,8 +13,9 @@ echo "=== Iniciando experimento: $EXPERIMENT ==="
 
 # 0. Limpiar jobs previos y caches stale (locks, pwms, leds)
 echo "Limpiando jobs anteriores..."
-$DC exec backend sh -c "pio kill --all-jobs 2>/dev/null; \
-  python3 -c \"
+for container in backend worker01; do
+  $DC exec "$container" sh -c "pio kill --all-jobs 2>/dev/null; \
+    python3 -c \"
 import sqlite3, os
 db = '/home/pioreactor/.pioreactor/storage/local_intermittent_pioreactor_metadata.sqlite'
 if os.path.exists(db):
@@ -28,7 +29,8 @@ DELETE FROM pio_job_metadata;''')
     c.commit()
     print('Cache cleaned')
     c.close()
-\"" || true
+\"" 2>/dev/null || true
+done
 
 # 1. Crear el experimento
 echo "Creando experimento..."
@@ -45,12 +47,14 @@ for w in pio01 worker01; do
   echo "  → $w registrado (pioreactor_20ml v1.1)"
 done
 
-# 3. Asignar worker pio01 al experimento
+# 3. Asignar workers al experimento
 echo "Asignando workers..."
-curl -s -X PUT "$API/experiments/$EXPERIMENT/workers" \
-  -H "Content-Type: application/json" \
-  -d "{\"pioreactor_unit\": \"pio01\"}"
-echo "  → pio01 asignado"
+for w in pio01 worker01; do
+  curl -s -o /dev/null -X PUT "$API/experiments/$EXPERIMENT/workers" \
+    -H "Content-Type: application/json" \
+    -d "{\"pioreactor_unit\": \"$w\"}"
+  echo "  → $w asignado"
+done
 
 # 3. Ejecutar el profile
 echo "Ejecutando experiment profile..."

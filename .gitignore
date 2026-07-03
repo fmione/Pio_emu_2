@@ -1,5 +1,14 @@
+# === Leader (lo efímero, NO config.ini) ===
 .pioreactor/storage/
-.pioreactor/config.ini
+.pioreactor/hardware/
+.pioreactor/ui/
+.pioreactor/exportable_datasets/
+.pioreactor/plugins/
+
+# === Worker (todo es regenerado por entrypoint) ===
+.pioreactor-worker/
+
+# === Root ===
 pioreactor.log
 __pycache__/
 *.pyc

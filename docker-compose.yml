@@ -13,7 +13,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.backend
-    hostname: pioreactor
+    hostname: pio01
     ports:
       - "2222:22"
       - "4999:4999"
@@ -21,12 +21,39 @@ services:
       - ./.pioreactor:/home/pioreactor/.pioreactor
       - pioreactor_cache:/tmp/pioreactor_cache
     environment:
-      HOSTNAME: pioreactor
+      HOSTNAME: pio01
       TESTING: "1"
       GLOBAL_CONFIG: /home/pioreactor/.pioreactor/config.ini
       DOT_PIOREACTOR: /home/pioreactor/.pioreactor
       RUN_PIOREACTOR: /tmp/pioreactor_cache
       PLUGINS_DEV: /home/pioreactor/plugins_dev
+      MODEL_NAME: pioreactor_20ml
+      MODEL_VERSION: "1.1"
+      HARDWARE: "1.2"
+    depends_on:
+      - mosquitto
+    restart: unless-stopped
+
+  worker01:
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
+    hostname: worker01
+    ports:
+      - "2223:22"
+    volumes:
+      - ./.pioreactor-worker:/home/pioreactor/.pioreactor
+      - worker01_cache:/tmp/pioreactor_cache
+    environment:
+      HOSTNAME: worker01
+      TESTING: "1"
+      GLOBAL_CONFIG: /home/pioreactor/.pioreactor/config.ini
+      DOT_PIOREACTOR: /home/pioreactor/.pioreactor
+      RUN_PIOREACTOR: /tmp/pioreactor_cache
+      PLUGINS_DEV: /home/pioreactor/plugins_dev
+      MODEL_NAME: pioreactor_20ml
+      MODEL_VERSION: "1.1"
+      HARDWARE: "1.2"
     depends_on:
       - mosquitto
     restart: unless-stopped
@@ -34,3 +61,4 @@ services:
 volumes:
   mosquitto_data:
   pioreactor_cache:
+  worker01_cache:

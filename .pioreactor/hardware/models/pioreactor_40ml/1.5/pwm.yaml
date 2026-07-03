@@ -1,8 +1,0 @@
-controller: rpi_gpio
-heater_pwm_channel: "5"
-pwm_to_pin:
-  "1": 17
-  "2": 13
-  "3": 16
-  "4": 12
-  "5": 18

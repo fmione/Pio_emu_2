@@ -1,0 +1,2 @@
+mosquitto_pub -h mosquitto -t "pioreactor/worker01/Test/od_reading/od2"   -m '{"calibrated":0,"timestamp":"2026-07-03T16:40:00+00
+:00","angle":"90","od":0.750,"channel":"2","ir_led_intensity":80.0}'
