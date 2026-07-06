@@ -5,8 +5,9 @@
 .pioreactor/exportable_datasets/
 .pioreactor/plugins/
 
-# === Worker (todo es regenerado por entrypoint) ===
-.pioreactor-worker/
+# === Worker (todo es regenerado por entrypoint, excepto config.ini) ===
+.pioreactor-worker/*
+!.pioreactor-worker/config.ini
 
 # === Root ===
 pioreactor.log
