@@ -9,10 +9,10 @@ if ! docker ps >/dev/null 2>&1; then
   DC="sudo docker compose"
 fi
 
-echo "=== Iniciando experimento: $EXPERIMENT ==="
+echo "=== Starting experiment: $EXPERIMENT ==="
 
-# 0. Limpiar jobs previos y caches stale (locks, pwms, leds)
-echo "Limpiando jobs anteriores..."
+# 0. Clean previous jobs and stale caches
+echo "Cleaning previous jobs..."
 for container in backend worker01; do
   $DC exec "$container" sh -c "pio kill --all-jobs 2>/dev/null; \
     python3 -c \"
@@ -32,33 +32,33 @@ DELETE FROM pio_job_metadata;''')
 \"" 2>/dev/null || true
 done
 
-# 1. Crear el experimento
-echo "Creando experimento..."
+# 1. Create the experiment
+echo "Creating experiment..."
 curl -s -X POST "$API/experiments" \
   -H "Content-Type: application/json" \
-  -d "{\"experiment\": \"$EXPERIMENT\", \"description\": \"Simulación automática - $EXPERIMENT\"}"
+  -d "{\"experiment\": \"$EXPERIMENT\", \"description\": \"Auto simulation - $EXPERIMENT\"}"
 
-# 2. Registrar workers si no existen
-echo "Registrando workers..."
+# 2. Register workers if they do not exist
+echo "Registering workers..."
 for w in pio01 worker01; do
   curl -s -o /dev/null -X PUT "$API/workers" \
     -H "Content-Type: application/json" \
     -d "{\"pioreactor_unit\": \"$w\", \"model_name\": \"pioreactor_20ml\", \"model_version\": \"1.1\"}"
-  echo "  → $w registrado (pioreactor_20ml v1.1)"
+  echo "  -> $w registered"
 done
 
-# 3. Asignar workers al experimento
-echo "Asignando workers..."
+# 3. Assign workers to the experiment
+echo "Assigning workers..."
 for w in pio01 worker01; do
   curl -s -o /dev/null -X PUT "$API/experiments/$EXPERIMENT/workers" \
     -H "Content-Type: application/json" \
     -d "{\"pioreactor_unit\": \"$w\"}"
-  echo "  → $w asignado"
+  echo "  -> $w assigned"
 done
 
-# 3. Ejecutar el profile
-echo "Ejecutando experiment profile..."
+# 4. Execute the experiment profile
+echo "Running experiment profile..."
 $DC exec backend bash -c "EXPERIMENT=$EXPERIMENT pio run experiment_profile execute \
   /home/pioreactor/.pioreactor/experiment_profiles/simulate.yaml \"$EXPERIMENT\""
 
-echo "=== Experimento $EXPERIMENT iniciado ==="
+echo "=== Experiment $EXPERIMENT started ==="

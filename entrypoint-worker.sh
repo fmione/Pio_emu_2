@@ -5,7 +5,7 @@ CAL_DIR="/home/pioreactor/.pioreactor/storage/calibrations"
 SQL_DIR="/app/packaging/shared-assets/sql"
 HARDWARE_DIR="/home/pioreactor/.pioreactor/hardware"
 
-# Crear archivos de configuración de hardware (ausentes en emulación sin HAT real)
+# Create hardware config files
 _create_hw_yaml() {
   local dir="$1"
   mkdir -p "$dir"
@@ -71,14 +71,14 @@ _create_hw_yaml "$HARDWARE_DIR/hats/1.2"
 _create_hw_yaml "$HARDWARE_DIR/models/pioreactor_20ml/1.1"
 _create_hw_yaml "$HARDWARE_DIR/models/pioreactor_40ml/1.5"
 
-# Crear directorio de calibraciones
+# Create calibrations directory
 mkdir -p "$CAL_DIR"
 
-# Copiar descriptores YAML de UI (Activities/Settings tabs)
+# Copy UI YAML descriptors
 mkdir -p /home/pioreactor/.pioreactor/ui
 cp -r /app/packaging/shared-assets/pioreactor/ui/* /home/pioreactor/.pioreactor/ui/ 2>/dev/null || true
 
-# Crear calibraciones default para bombas (media/waste)
+# Create default pump calibrations
 python3 << 'PYEOF'
 import sqlite3, json, os
 from datetime import datetime, timezone
@@ -123,16 +123,16 @@ for pump in ['media_pump', 'waste_pump']:
     )
 conn.commit()
 conn.close()
-print('Calibraciones default worker01 creadas.')
+print('Default calibrations for worker01 created.')
 PYEOF
 
-# Ownership después de crear todo
+# Fix ownership after creating everything
 chown -R pioreactor:pioreactor /home/pioreactor/.pioreactor 2>/dev/null || true
 
-# Fijar permisos del cache
+# Fix cache permissions
 chown -R pioreactor:pioreactor /tmp/pioreactor_cache 2>/dev/null || true
 
-# Limpiar caches stale
+# Clean stale caches
 python3 -c "
 import sqlite3, os
 db_path = '/home/pioreactor/.pioreactor/storage/local_intermittent_pioreactor_metadata.sqlite'
@@ -149,5 +149,5 @@ huey_consumer pioreactor.web.tasks.huey -n -w 4 -f -C -d 0.01 &
 
 /usr/sbin/sshd
 
-echo "Worker01 listo en puerto 4999"
+echo "Worker01 ready on port 4999"
 exec flask --app worker_app run -p 4999 --host 0.0.0.0

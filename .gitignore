@@ -1,4 +1,4 @@
-# === Leader (lo efímero, NO config.ini) ===
+# === Leader (ephemeral, NOT config.ini) ===
 .pioreactor/storage/
 .pioreactor/hardware/
 .pioreactor/ui/

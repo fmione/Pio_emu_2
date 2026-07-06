@@ -6,7 +6,7 @@ CAL_DIR="/home/pioreactor/.pioreactor/storage/calibrations"
 SQL_DIR="/app/packaging/shared-assets/sql"
 HARDWARE_DIR="/home/pioreactor/.pioreactor/hardware"
 
-# Crear archivos de configuración de hardware (ausentes en emulación sin HAT real)
+# Create hardware config files
 _create_hw_yaml() {
   local dir="$1"
   mkdir -p "$dir"
@@ -72,9 +72,9 @@ _create_hw_yaml "$HARDWARE_DIR/hats/1.2"
 _create_hw_yaml "$HARDWARE_DIR/models/pioreactor_20ml/1.1"
 _create_hw_yaml "$HARDWARE_DIR/models/pioreactor_40ml/1.5"
 
-# Inicializar base de datos si no existe
+# Initialize database if it does not exist
 if [ ! -f "$DB" ]; then
-  echo "Inicializando base de datos..."
+  echo "Initializing database..."
   python3 -c "
 import sqlite3, os
 db_path = os.environ.get('DB', '$DB')
@@ -85,16 +85,16 @@ conn.close()
 "
 fi
 
-# Asegurar ownership del volume montado para el usuario pioreactor
+# Ensure ownership of mounted volume for pioreactor user
 chown -R pioreactor:pioreactor /home/pioreactor/.pioreactor 2>/dev/null || true
 
-# Crear directorio de calibraciones (evita 404 en /unit_api/calibrations)
+# Create calibrations directory
 mkdir -p "$CAL_DIR"
 
-# Fijar permisos del cache para que el usuario pioreactor (UID 1000) pueda escribir
+# Fix cache permissions so pioreactor user can write
 chown -R pioreactor:pioreactor /tmp/pioreactor_cache 2>/dev/null || true
 
-# Limpiar caches stale (locks huérfanos de corridas anteriores)
+# Clean stale caches
 python3 -c "
 import sqlite3, os
 db_path = '/home/pioreactor/.pioreactor/storage/local_intermittent_pioreactor_metadata.sqlite'
@@ -107,11 +107,11 @@ if os.path.exists(db_path):
     c.close()
 " 2>/dev/null || true
 
-# Copiar descriptores YAML de UI (Activities/Settings tabs)
+# Copy UI YAML descriptors
 mkdir -p /home/pioreactor/.pioreactor/ui
 cp -r /app/packaging/shared-assets/pioreactor/ui/* /home/pioreactor/.pioreactor/ui/ 2>/dev/null || true
 
-# Crear calibraciones default para bombas (media/waste)
+# Create default pump calibrations
 python3 << 'PYEOF'
 import sqlite3, json, os
 from datetime import datetime, timezone
@@ -159,10 +159,10 @@ for pump in ['media_pump', 'waste_pump']:
     )
 conn.commit()
 conn.close()
-print('Calibraciones default pio01 creadas.')
+print('Default calibrations for pio01 created.')
 PYEOF
 
-# Registrar leader y worker01 como workers
+# Register leader and worker01 as workers
 python3 -c "
 import sqlite3, os
 db = os.environ.get('DB', '$DB')
@@ -173,15 +173,15 @@ conn.execute('''INSERT OR IGNORE INTO workers (pioreactor_unit, is_active, model
     VALUES ('worker01', 1, 'pioreactor_20ml', '1.1', strftime('%Y-%m-%dT%H:%M:%S+00:00', 'now'))''')
 conn.commit()
 conn.close()
-print('Workers registrados: pio01 y worker01 (20ml v1.1)')
+print('Workers registered: pio01 and worker01 (20ml v1.1)')
 " 2>/dev/null || true
 
-# Asegurar ownership después de crear calibraciones
+# Ensure ownership after creating calibrations
 chown -R pioreactor:pioreactor /home/pioreactor/.pioreactor 2>/dev/null || true
 
 huey_consumer pioreactor.web.tasks.huey -n -w 8 -f -C -d 0.01 &
 
-# Esperar a que Mosquitto esté listo y luego iniciar el streaming MQTT→DB
+# Wait for Mosquitto to be ready, then start MQTT-to-DB streaming
 (sleep 5 && pio run mqtt_to_db_streaming) &
 
 /usr/sbin/sshd

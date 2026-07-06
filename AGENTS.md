@@ -1,53 +1,53 @@
 # PioDocker — Pioreactor Local Emulator
 
-Propósito: Emular localmente (vía Docker) el stack completo de Pioreactor sin
-hardware Raspberry Pi. Usar `TESTING=1` para sustituir GPIO/I2C/ADC.
+Purpose: Locally emulate via Docker the full Pioreactor stack without
+Raspberry Pi hardware. Use `TESTING=1` to substitute GPIO/I2C/ADC.
 
-## Stack emulado
+## Emulated stack
 
-| Servicio       | Tecnología             |
+| Service        | Technology             |
 |----------------|------------------------|
 | MQTT broker    | Eclipse Mosquitto      |
-| Tareas async   | Huey + SqliteHuey      |
-| Backend API    | Flask (puerto 4999)    |
+| Async tasks    | Huey + SqliteHuey      |
+| Backend API    | Flask (port 4999)      |
 | Workers        | Python 3.13+           |
-| Frontend       | React (desde Flask)    |
-| Base de datos  | SQLite (en volumen)    |
+| Frontend       | React served by Flask  |
+| Database       | SQLite on volume       |
 
-## Arquitectura
+## Architecture
 
-- `docker-compose.yml` orquesta mosquitto + backend.
-- El backend corre con `TESTING=1` y `config.ini` (basado en `config.dev.ini` del upstream).
-- Los workers se ejecutan como procesos dentro del contenedor backend,
-  lanzados vía `pio run` o la API HTTP.
-- MQTT es el bus de mensajes entre workers y UI.
-- Huey usa **SqliteHuey** (archivo SQLite local), **no Redis**.
-- El frontend React (pre-compilado) es servido por Flask en el puerto 4999.
-  No hay contenedor frontend separado.
+- `docker-compose.yml` orchestrates mosquitto + backend.
+- Backend runs with `TESTING=1` and `config.ini` (based on upstream `config.dev.ini`).
+- Workers run as processes inside the backend container,
+  launched via `pio run` or the HTTP API.
+- MQTT is the message bus between workers and the UI.
+- Huey uses **SqliteHuey**, **not Redis**.
+- The React frontend, pre-compiled, is served by Flask on port 4999.
+  There is no separate frontend container.
 
-## Comandos de desarrollo
+## Development commands
 
-- `docker compose up --build` — levanta todo el stack.
-- `docker compose exec backend pytest core/tests` — ejecutar tests.
-- `docker compose exec backend pio run <job>` — lanzar job manualmente.
-- `docker compose exec backend pio logs -n 10` — ver logs recientes.
-- `docker compose exec backend pio mqtt` — ver feed MQTT en vivo.
-- `./simulate.sh [experimento]` — crear experimento y lanzar simulación (stirring 500, temp 30°C, OD LED 80%).
+- `docker compose up --build` — brings up the full stack.
+- `docker compose exec backend pytest core/tests` — run tests.
+- `docker compose exec backend pio run <job>` — launch a job manually.
+- `docker compose exec backend pio logs -n 10` — view recent logs.
+- `docker compose exec backend pio mqtt` — view live MQTT feed.
+- `./simulate.sh [experiment]` — create experiment and start simulation (stirring 500, temp 30C, OD LED 80%).
 
-## Archivos del proyecto
+## Project files
 
-| Archivo | Propósito |
+| File | Purpose |
 |---|---|
-| `docker-compose.yml` | Orquesta mosquitto + backend |
-| `Dockerfile.backend` | Imagen Python 3.13-slim con Pioreactor |
-| `entrypoint.sh` | Lanza Huey consumer + Flask API + MQTT→DB streaming |
-| `simulate.sh` | Script para lanzar simulación manual |
-| `mosquitto/mosquitto.conf` | Config Mosquitto (anon, MQTT + WS) |
-| `.pioreactor/config.ini` | Config Pioreactor (broker→`mosquitto`) |
-| `.pioreactor/experiment_profiles/simulate.yaml` | Perfil de experimento para simulación |
+| `docker-compose.yml` | Orchestrates mosquitto + backend |
+| `Dockerfile.backend` | Python 3.13-slim image with Pioreactor |
+| `entrypoint.sh` | Launches Huey consumer + Flask API + MQTT-to-DB streaming |
+| `simulate.sh` | Script to launch manual simulation |
+| `mosquitto/mosquitto.conf` | Mosquitto config (anon, MQTT + WS) |
+| `.pioreactor/config.ini` | Pioreactor config (broker->`mosquitto`) |
+| `.pioreactor/experiment_profiles/simulate.yaml` | Experiment profile for simulation |
 
-## Referencias
+## References
 
-- Repo upstream: https://github.com/Pioreactor/pioreactor
-- Docs desarrollo local: https://docs.pioreactor.com/developer-guide/local-development
-- Config dev: `config.dev.ini` del upstream
+- Upstream repo: https://github.com/Pioreactor/pioreactor
+- Local development docs: https://docs.pioreactor.com/developer-guide/local-development
+- Dev config: upstream `config.dev.ini`
