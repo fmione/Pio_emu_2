@@ -4,6 +4,7 @@ RUN apt-get update && \
     apt-get install -y --no-install-recommends \
         git \
         mosquitto-clients \
+        sqlite3 \
         gcc \
         openssh-server \
         sudo \

@@ -8,6 +8,8 @@ services:
       - ./mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf
       - mosquitto_data:/mosquitto/data
     restart: unless-stopped
+    networks:
+    - lab-network
 
   backend:
     build:
@@ -33,6 +35,8 @@ services:
     depends_on:
       - mosquitto
     restart: unless-stopped
+    networks:
+    - lab-network
 
   worker01:
     build:
@@ -57,8 +61,13 @@ services:
     depends_on:
       - mosquitto
     restart: unless-stopped
+    networks:
+    - lab-network
 
 volumes:
   mosquitto_data:
   pioreactor_cache:
   worker01_cache:
+networks:
+  lab-network:
+    external: true

@@ -179,6 +179,31 @@ print('Workers registered: pio01 and worker01 (20ml v1.1)')
 # Ensure ownership after creating calibrations
 chown -R pioreactor:pioreactor /home/pioreactor/.pioreactor 2>/dev/null || true
 
+# Clear stale MQTT retained job states (prevents "Lost" on startup)
+python3 -c "
+import paho.mqtt.client as mqtt
+import time
+
+cleared = set()
+
+def on_message(client, userdata, msg):
+    topic = msg.topic
+    if topic not in cleared and msg.payload and topic.endswith('/\$state'):
+        client.publish(topic, '', retain=True)
+        cleared.add(topic)
+        print(f'Cleared retained state: {topic}')
+
+c = mqtt.Client(client_id='clear-states-pio01', protocol=mqtt.MQTTv5)
+c.connect('mosquitto', 1883, 60)
+c.subscribe('pioreactor/pio01/#', qos=1)
+c.on_message = on_message
+c.loop_start()
+time.sleep(5)
+c.loop_stop()
+c.disconnect()
+print(f'Cleared {len(cleared)} stale job states for pio01')
+" 2>/dev/null || true
+
 huey_consumer pioreactor.web.tasks.huey -n -w 8 -f -C -d 0.01 &
 
 # Wait for Mosquitto to be ready, then start MQTT-to-DB streaming

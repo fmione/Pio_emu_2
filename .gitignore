@@ -4,6 +4,7 @@
 .pioreactor/ui/
 .pioreactor/exportable_datasets/
 .pioreactor/plugins/
+.pioreactor/experiment_profiles/
 
 # === Worker (todo es regenerado por entrypoint, excepto config.ini) ===
 .pioreactor-worker/*
