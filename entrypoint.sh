@@ -72,6 +72,9 @@ _create_hw_yaml "$HARDWARE_DIR/hats/1.2"
 _create_hw_yaml "$HARDWARE_DIR/models/pioreactor_20ml/1.1"
 _create_hw_yaml "$HARDWARE_DIR/models/pioreactor_40ml/1.5"
 
+# Ensure storage directory exists (volume mount may not include it)
+mkdir -p "$(dirname "$DB")"
+
 # Initialize database if it does not exist
 if [ ! -f "$DB" ]; then
   echo "Initializing database..."
