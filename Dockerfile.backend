@@ -21,6 +21,14 @@ RUN git clone --depth 1 https://github.com/Pioreactor/pioreactor.git .
 
 RUN pip install --no-cache-dir -e "core/.[leader,worker]" -r requirements/requirements.txt pyyaml
 
+# Fix: load_exportable_datasets() uses relative path in TESTING mode, but CWD=/app
+# Patch it to use DOT_PIOREACTOR env var instead
+RUN sed -i '1s/^/import os\n/' /app/core/pioreactor/actions/leader/export_experiment_data.py && \
+    sed -i 's|sorted(Path(".pioreactor/exportable_datasets").glob|sorted((Path(os.environ.get("DOT_PIOREACTOR", ".")) / "exportable_datasets").glob|' \
+    /app/core/pioreactor/actions/leader/export_experiment_data.py && \
+    sed -i 's|sorted(Path(".pioreactor/plugins/exportable_datasets").glob|sorted((Path(os.environ.get("DOT_PIOREACTOR", ".")) / "plugins" / "exportable_datasets").glob|' \
+    /app/core/pioreactor/actions/leader/export_experiment_data.py
+
 COPY local_app.py /app/local_app.py
 
 RUN mkdir -p /home/pioreactor/.pioreactor/storage \

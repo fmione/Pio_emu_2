@@ -78,6 +78,9 @@ mkdir -p "$CAL_DIR"
 mkdir -p /home/pioreactor/.pioreactor/ui
 cp -r /app/packaging/shared-assets/pioreactor/ui/* /home/pioreactor/.pioreactor/ui/ 2>/dev/null || true
 
+# Copy exportable dataset YAML descriptors
+cp -r /app/packaging/shared-assets/pioreactor/exportable_datasets/* /home/pioreactor/.pioreactor/exportable_datasets/ 2>/dev/null || true
+
 # Create default pump calibrations
 python3 << 'PYEOF'
 import sqlite3, json, os
