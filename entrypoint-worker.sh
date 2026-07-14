@@ -175,6 +175,21 @@ print(f'Cleared {len(cleared)} stale job states for worker01')
 
 huey_consumer pioreactor.web.tasks.huey -n -w 4 -f -C -d 0.01 &
 
+# Patches to disable mock data emission in TESTING mode (external data via MQTT only)
+if [ "$TESTING" = "1" ]; then
+  # od_reading.py: skip record_from_adc() when TESTING=1
+  sed -i '/def record_from_adc(self) -> structs.ODReadings | None:/a\        if whoami.is_testing_env(): return None' \
+    /app/core/pioreactor/background_jobs/od_reading.py 2>/dev/null || true
+
+  # temperature_automation.py: skip infer_temperature() when TESTING=1
+  sed -i '/def infer_temperature(self) -> None:/a\        if whoami.is_testing_env(): return' \
+    /app/core/pioreactor/background_jobs/temperature_automation.py 2>/dev/null || true
+
+  # temperature_automation.py: skip initial temperature read in on_init_to_ready()
+  sed -i '/def on_init_to_ready(self) -> None:/a\        if whoami.is_testing_env(): return' \
+    /app/core/pioreactor/background_jobs/temperature_automation.py 2>/dev/null || true
+fi
+
 /usr/sbin/sshd
 
 echo "Worker01 ready on port 4999"
