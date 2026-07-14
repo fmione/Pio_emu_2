@@ -213,6 +213,10 @@ c.disconnect()
 print(f'Cleared {len(cleared)} stale job states for pio01')
 " 2>/dev/null || true
 
+# Patch experiment_profile.py to fix TESTING=1 assignment check
+sed -i 's/if get_assigned_experiment_name(unit) != experiment:/if (get_assigned_experiment_name(unit) != experiment) and not is_testing_env():/g' \
+  /app/core/pioreactor/actions/leader/experiment_profile.py 2>/dev/null || true
+
 huey_consumer pioreactor.web.tasks.huey -n -w 8 -f -C -d 0.01 &
 
 # Wait for Mosquitto to be ready, then start MQTT-to-DB streaming
