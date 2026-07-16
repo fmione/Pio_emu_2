@@ -64,6 +64,29 @@ services:
     networks:
     - lab-network
 
+  emulator:
+    build:
+      context: .
+      dockerfile: Dockerfile.emulator
+    entrypoint: ["sleep", "infinity"]
+    volumes:
+      - ./.pioreactor:/home/pioreactor/.pioreactor
+      - ./emulator/state:/app/state
+      - ./emulator/configs:/app/configs
+    environment:
+      STATE_DIR: /app/state
+      CONFIG_PATH: /app/configs/EMULATOR_config.json
+      MQTT_BROKER: mosquitto
+      MQTT_PORT: "1883"
+      DATA_DIR: /app/state
+      PIO_DB_PATH: /home/pioreactor/.pioreactor/storage/pioreactor.sqlite
+    depends_on:
+      - mosquitto
+      - backend
+    restart: unless-stopped
+    networks:
+    - lab-network
+
 volumes:
   mosquitto_data:
   pioreactor_cache:

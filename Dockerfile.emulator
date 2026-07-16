@@ -1,0 +1,23 @@
+FROM python:3.13-slim
+
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends gcc && \
+    rm -rf /var/lib/apt/lists/*
+
+RUN pip install --no-cache-dir numpy scipy paho-mqtt pyyaml
+
+WORKDIR /app
+
+COPY emulator/ /app/emulator/
+
+RUN mkdir -p /app/state /app/configs
+
+ENV STATE_DIR=/app/state
+ENV CONFIG_PATH=/app/configs/EMULATOR_config.json
+ENV MQTT_BROKER=mosquitto
+ENV MQTT_PORT=1883
+ENV DATA_DIR=/app/state
+ENV PIO_DB_PATH=/home/pioreactor/.pioreactor/storage/pioreactor.sqlite
+
+ENTRYPOINT ["python", "-m", "emulator.cli"]
+CMD ["start"]
