@@ -32,6 +32,7 @@ services:
       MODEL_NAME: pioreactor_20ml
       MODEL_VERSION: "1.1"
       HARDWARE: "1.2"
+      MQTT_EXTERNAL_HOST: ${MQTT_EXTERNAL_HOST:-localhost}
     depends_on:
       - mosquitto
     restart: unless-stopped

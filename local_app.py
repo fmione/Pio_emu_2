@@ -24,7 +24,8 @@ def serve_export(filename):
 def rewrite_mqtt_config_for_frontend(response):
     if request.path == "/api/config/shared":
         text = response.get_data(as_text=True)
-        text = text.replace("broker_address=mosquitto", "broker_address=localhost")
+        broker_host = os.environ.get("MQTT_EXTERNAL_HOST", "localhost")
+        text = text.replace("broker_address=mosquitto", f"broker_address={broker_host}")
         response.set_data(text)
     return response
 
