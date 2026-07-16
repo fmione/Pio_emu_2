@@ -10,6 +10,9 @@
 .pioreactor-worker/*
 !.pioreactor-worker/config.ini
 
+# === Emulator state (ephemeral, regenerated each run) ===
+emulator/state/
+
 # === Root ===
 pioreactor.log
 __pycache__/
