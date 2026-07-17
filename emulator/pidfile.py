@@ -24,15 +24,18 @@ def is_running():
     if not os.path.exists(PID_FILE):
         return False
     if os.path.exists(STOP_FLAG):
+        remove_pid()
         return False
     with open(PID_FILE) as f:
         pid = int(f.read().strip())
     if pid <= 1:
+        remove_pid()
         return False
     try:
         os.kill(pid, 0)
         return True
     except OSError:
+        remove_pid()
         return False
 
 

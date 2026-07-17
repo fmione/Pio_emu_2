@@ -7,6 +7,12 @@ services:
     volumes:
       - ./mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf
       - mosquitto_data:/mosquitto/data
+    healthcheck:
+      test: ["CMD-SHELL", "mosquitto_sub -t '$$SYS/#' -C 1 -i healthcheck -W 3 || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
     restart: unless-stopped
     networks:
     - lab-network
@@ -69,7 +75,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.emulator
-    entrypoint: ["sleep", "infinity"]
+    entrypoint: ["/bin/bash", "/app/entrypoint-emulator.sh"]
     volumes:
       - ./.pioreactor:/home/pioreactor/.pioreactor
       - ./emulator/state:/app/state
@@ -82,8 +88,10 @@ services:
       DATA_DIR: /app/state
       PIO_DB_PATH: /home/pioreactor/.pioreactor/storage/pioreactor.sqlite
     depends_on:
-      - mosquitto
-      - backend
+      mosquitto:
+        condition: service_healthy
+      backend:
+        condition: service_started
     restart: unless-stopped
     networks:
     - lab-network

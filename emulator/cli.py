@@ -15,11 +15,11 @@ log = logging.getLogger("emulator.cli")
 
 
 def cmd_start(args):
-    from emulator.pidfile import clear_stop_flag, PID_FILE, STOP_FLAG
+    from emulator.pidfile import clear_stop_flag, is_running, PID_FILE
     from emulator.main import run
 
-    if os.path.exists(PID_FILE) and not os.path.exists(STOP_FLAG):
-        log.error("Emulator already running (PID file exists without stop flag)")
+    if is_running():
+        log.error("Emulator already running")
         sys.exit(1)
 
     clear_stop_flag()

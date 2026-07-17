@@ -9,6 +9,8 @@ RUN pip install --no-cache-dir numpy scipy paho-mqtt pyyaml
 WORKDIR /app
 
 COPY emulator/ /app/emulator/
+COPY entrypoint-emulator.sh /app/entrypoint-emulator.sh
+RUN chmod +x /app/entrypoint-emulator.sh
 
 RUN mkdir -p /app/state /app/configs
 

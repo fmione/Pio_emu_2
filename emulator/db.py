@@ -27,8 +27,8 @@ def clean_db():
         return
 
     conn = sqlite3.connect(db_path)
-    for table in ["dosing_events", "od_readings", "experiment_worker_assignments", "experiments"]:
-        conn.execute(f"DELETE FROM {table} WHERE experiment = ?", (exp_name,))
+    conn.execute("PRAGMA foreign_keys = ON")
+    conn.execute("DELETE FROM experiments WHERE experiment = ?", (exp_name,))
     conn.commit()
     conn.close()
     log.info(f"Cleaned experiment '{exp_name}' from database")
