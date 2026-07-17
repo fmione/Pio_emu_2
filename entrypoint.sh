@@ -104,7 +104,10 @@ db_path = '/home/pioreactor/.pioreactor/storage/local_intermittent_pioreactor_me
 if os.path.exists(db_path):
     c = sqlite3.connect(db_path)
     for table in ['cache_pwm_locks', 'cache_pwm_dc', 'cache_led_locks', 'cache_leds', 'cache_debounce']:
-        c.execute(f'DELETE FROM {table}')
+        try:
+            c.execute(f'DELETE FROM {table}')
+        except sqlite3.OperationalError:
+            pass
     c.execute('DELETE FROM pio_job_metadata')
     c.commit()
     c.close()
