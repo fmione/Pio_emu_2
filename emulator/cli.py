@@ -44,6 +44,7 @@ def cmd_status(args):
 
 def cmd_reset(args):
     state_dir = os.environ.get("STATE_DIR", "/app/state")
+    model_dir = os.environ.get("MODEL_DIR", "/app/model")
 
     for fname in ["EMULATOR_state.json", "EMULATOR_design.json", "EMULATOR_prediction.json",
                    "db_emulator.json", "start_datetime", "emulator.pid", "stopped",
@@ -52,6 +53,14 @@ def cmd_reset(args):
         if os.path.exists(path):
             os.remove(path)
             log.info(f"Removed {fname}")
+
+    # Model-generated runtime files (never the sources / EMULATOR_config.json)
+    for fname in ["EMULATOR_state.json", "EMULATOR_design.json", "db_emulator.json",
+                   "measurements_atline.csv"]:
+        path = os.path.join(model_dir, fname)
+        if os.path.exists(path):
+            os.remove(path)
+            log.info(f"Removed model/{fname}")
 
     log.info("Reset complete")
 

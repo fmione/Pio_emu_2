@@ -8,6 +8,7 @@ import paho.mqtt.client as mqtt
 MQTT_BROKER = os.environ.get("MQTT_BROKER", "mosquitto")
 MQTT_PORT = int(os.environ.get("MQTT_PORT", "1883"))
 STATE_DIR = os.environ.get("STATE_DIR", "/app/state")
+MODEL_DIR = os.environ.get("MODEL_DIR", "/app/model")
 
 MEASUREMENT_MAP = {
     "Xv": {
@@ -19,11 +20,6 @@ MEASUREMENT_MAP = {
         "topic_suffix": "od_reading/od_fused",
         "payload_key": "od_fused",
         "parser": None,
-    },
-    "Temperature": {
-        "topic_suffix": "temperature_automation/temperature",
-        "payload_key": "temperature",
-        "parser": "parse_temperature",
     },
     "Glucose": {
         "topic_suffix": "bioreactor/glucose",
@@ -85,8 +81,6 @@ def build_payload(measurement: str, value: float, timestamp_dt: datetime) -> str
         })
     elif config["parser"] == "parse_od_fused":
         return json.dumps({"od_fused": value, "timestamp": ts})
-    elif config["parser"] == "parse_temperature":
-        return json.dumps({"temperature": value, "timestamp": ts})
     else:
         return json.dumps({config["payload_key"]: value, "timestamp": ts})
 
@@ -120,7 +114,7 @@ def save_measurements(start_datetime):
     if isinstance(start_datetime, str):
         start_datetime = datetime.fromisoformat(start_datetime).replace(tzinfo=timezone.utc)
 
-    config_path = os.environ.get("CONFIG_PATH", "/app/configs/EMULATOR_config.json")
+    config_path = os.environ.get("CONFIG_PATH", "/app/model/EMULATOR_config.json")
     with open(config_path) as f:
         emulator_config = json.load(f)
 
@@ -128,7 +122,7 @@ def save_measurements(start_datetime):
     mbr_list = emulator_config["Brxtor_list"]
     OD_factor = emulator_config["OD_factor"]
 
-    input_path = os.environ.get("DB_EMULATOR_PATH", os.path.join(STATE_DIR, "db_emulator.json"))
+    input_path = os.environ.get("DB_EMULATOR_PATH", os.path.join(MODEL_DIR, "db_emulator.json"))
 
     if not os.path.exists(input_path):
         log.warning(f"Input file not found: {input_path}")

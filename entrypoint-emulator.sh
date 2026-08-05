@@ -23,7 +23,7 @@ import json, time, os
 from datetime import datetime, timezone
 
 state_dir = '$STATE_DIR'
-config_path = os.environ.get('CONFIG_PATH', '/app/configs/EMULATOR_config.json')
+config_path = os.environ.get('CONFIG_PATH', '/app/model/EMULATOR_config.json')
 
 try:
     with open(config_path) as f:

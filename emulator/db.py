@@ -12,7 +12,7 @@ def _get_db_path():
 
 
 def _get_config():
-    config_path = os.environ.get("CONFIG_PATH", "/app/configs/EMULATOR_config.json")
+    config_path = os.environ.get("CONFIG_PATH", "/app/model/EMULATOR_config.json")
     with open(config_path) as f:
         return json.load(f)
 

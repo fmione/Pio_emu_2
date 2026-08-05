@@ -78,11 +78,13 @@ services:
     entrypoint: ["/bin/bash", "/app/entrypoint-emulator.sh"]
     volumes:
       - ./.pioreactor:/home/pioreactor/.pioreactor
+      - ./emulator/model:/app/model
       - ./emulator/state:/app/state
-      - ./emulator/configs:/app/configs
     environment:
       STATE_DIR: /app/state
-      CONFIG_PATH: /app/configs/EMULATOR_config.json
+      MODEL_DIR: /app/model
+      CONFIG_PATH: /app/model/EMULATOR_config.json
+      DB_EMULATOR_PATH: /app/model/db_emulator.json
       MQTT_BROKER: mosquitto
       MQTT_PORT: "1883"
       DATA_DIR: /app/state
