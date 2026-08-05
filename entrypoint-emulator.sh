@@ -23,9 +23,14 @@ import json, time, os
 from datetime import datetime, timezone
 
 state_dir = '$STATE_DIR'
+model_dir = os.environ.get('MODEL_DIR', '/app/model')
 config_path = os.environ.get('CONFIG_PATH', '/app/model/EMULATOR_config.json')
 
 try:
+    if not os.path.exists(os.path.join(model_dir, 'EMULATOR_state.json')):
+        print('no-checkpoint')
+        raise SystemExit
+
     with open(config_path) as f:
         config = json.load(f)
 
@@ -39,6 +44,8 @@ try:
         print('yes')
     else:
         print('no')
+except SystemExit:
+    pass
 except Exception as e:
     print(f'error: {e}', flush=True)
     print('no')
@@ -49,6 +56,9 @@ if [ "$CAN_CONTINUE" = "yes" ]; then
     sleep 10
     echo "Resuming emulator from checkpoint"
     exec python3 -m emulator.cli start --resume
+elif [ "$CAN_CONTINUE" = "no-checkpoint" ]; then
+    echo "No model checkpoint found — stale state from a previous version. Staying idle."
+    exec sleep infinity
 else
     echo "Experiment complete or invalid ($CAN_CONTINUE) — staying idle"
     exec sleep infinity
