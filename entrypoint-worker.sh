@@ -175,6 +175,12 @@ print(f'Cleared {len(cleared)} stale job states for worker01')
 
 huey_consumer pioreactor.web.tasks.huey -n -w 4 -f -C -d 0.01 &
 
+# Start monitor (publishes $state, versions, etc.)
+# Patch: skip mqtt_to_db_streaming check since worker is not the real leader
+sed -i 's/while not utils.is_pio_job_running("mqtt_to_db_streaming"):/while False and not utils.is_pio_job_running("mqtt_to_db_streaming"):/' \
+  /app/core/pioreactor/background_jobs/monitor.py 2>/dev/null || true
+(sleep 5 && pio run monitor) &
+
 # Patches to disable mock data emission in TESTING mode (external data via MQTT only)
 if [ "$TESTING" = "1" ]; then
   # od_reading.py: skip record_from_adc() when TESTING=1

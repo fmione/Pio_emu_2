@@ -237,8 +237,9 @@ fi
 
 huey_consumer pioreactor.web.tasks.huey -n -w 8 -f -C -d 0.01 &
 
-# Wait for Mosquitto to be ready, then start MQTT-to-DB streaming
+# Wait for Mosquitto to be ready, then start MQTT-to-DB streaming and monitor
 (sleep 5 && pio run mqtt_to_db_streaming) &
+(sleep 15 && pio run monitor) &
 
 /usr/sbin/sshd
 

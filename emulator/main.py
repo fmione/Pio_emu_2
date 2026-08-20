@@ -7,6 +7,7 @@ import logging
 from emulator.config import load_config
 from emulator.mqtt import save_measurements
 from emulator.db import clean_db, init_db
+from emulator.dosing import load_and_update_design
 from emulator.pidfile import write_pid, remove_pid, should_stop, clear_stop_flag
 
 log = logging.getLogger("emulator.main")
@@ -101,6 +102,7 @@ def run(start_from_checkpoint=False):
                 log.info("Stop flag detected, exiting gracefully")
                 break
 
+            load_and_update_design(MODEL_DIR, start_datetime, config["Brxtor_list"])
             run_emu()
 
             state = _load_model_json("EMULATOR_state.json")

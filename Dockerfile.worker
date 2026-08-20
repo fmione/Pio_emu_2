@@ -15,9 +15,11 @@ RUN apt-get update && \
     sed -i 's/^#PasswordAuthentication.*/PasswordAuthentication yes/' /etc/ssh/sshd_config && \
     ssh-keygen -A
 
+ARG PIO_VERSION=26.6.0
+
 WORKDIR /app
 
-RUN git clone --depth 1 https://github.com/Pioreactor/pioreactor.git .
+RUN git clone --depth 1 --branch ${PIO_VERSION} https://github.com/Pioreactor/pioreactor.git .
 
 RUN pip install --no-cache-dir -e "core/.[leader,worker]" -r requirements/requirements.txt pyyaml
 

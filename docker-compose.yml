@@ -21,6 +21,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.backend
+      args:
+        PIO_VERSION: ${PIO_VERSION:-26.6.0}
     hostname: pio01
     ports:
       - "2222:22"
@@ -49,6 +51,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.worker
+      args:
+        PIO_VERSION: ${PIO_VERSION:-26.6.0}
     hostname: worker01
     ports:
       - "2223:22"
@@ -78,6 +82,7 @@ services:
     entrypoint: ["/bin/bash", "/app/entrypoint-emulator.sh"]
     volumes:
       - ./.pioreactor:/home/pioreactor/.pioreactor
+      - ./emulator:/app/emulator
       - ./emulator/model:/app/model
       - ./emulator/state:/app/state
     environment:
