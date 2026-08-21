@@ -94,6 +94,7 @@ services:
       MQTT_PORT: "1883"
       DATA_DIR: /app/state
       PIO_DB_PATH: /home/pioreactor/.pioreactor/storage/pioreactor.sqlite
+      PROFILE_YAML_PATH: /home/pioreactor/.pioreactor/experiment_profiles/profile_updated.yaml
     depends_on:
       mosquitto:
         condition: service_healthy

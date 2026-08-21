@@ -119,11 +119,11 @@ def run(start_from_checkpoint=False):
             sim_time = state["time"]
             log.info(f"Step done: sim_time={sim_time:.4f}h / {experiment_duration}h")
 
+            save_measurements(start_datetime)
+
             if sim_time >= experiment_duration:
                 log.info(f"Experiment complete: sim_time={sim_time:.4f}h >= {experiment_duration}h")
                 break
-
-            save_measurements(start_datetime)
 
             time.sleep(interval_seconds)
 
