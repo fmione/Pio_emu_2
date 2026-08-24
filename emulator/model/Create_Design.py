@@ -20,13 +20,13 @@ mbr_group = {'pioreactors': ['pio01', 'worker01']}
 # Initial conditions for [Xv, Glucose, Ethanol, V, e]
 species_IC = [1.0, 2, 0, 0.011, 0,0]
 
-# Feed profile: one pulse per hour from hour 5 onwards
-profile_design = {}
-time_feed = np.arange(5, t_duration, 1)#np.array([])#np.arange(5, t_duration, 1)#
-Feed_profile = time_feed * 0 + 0.5
+# Feed profile:
+time_feed = [np.arange(5, t_duration, 1), np.arange(5, t_duration, 2)]#np.array([])#np.arange(5, t_duration, 1)#
 
-for i1 in mbr_group['pioreactors']:
-    profile_design[i1] = {'time_feed': time_feed.tolist(), 'Feed_profile': Feed_profile.tolist()}
+profile_design = {}
+for n1,i1 in enumerate(mbr_group['pioreactors']):
+    Feed_profile = time_feed[n1] * 0 + 0.5
+    profile_design[i1] = {'time_feed': time_feed[n1].tolist(), 'Feed_profile': Feed_profile.tolist()}
 
 # Measurement sampling times
 time_samples = {
@@ -35,7 +35,8 @@ time_samples = {
 }
 
 # Measurement noise (percentage)
-Noise_concentration = 0.99
+Noise_concentration = {    'Xv': 1/100,
+                       'Glucose': 5/100}
 Noise_time = 1
 
 # Glucose feed concentration (g/L)
@@ -90,7 +91,7 @@ for idx, i1 in enumerate(EXP_list):
 
 EMULATOR_config['number_br'] = len(mbr_list)
 EMULATOR_config['time_execution'] = time_execution
-EMULATOR_config['Noise_concentration'] = Noise_concentration / 100
+EMULATOR_config['Noise_concentration'] = Noise_concentration
 EMULATOR_config['Noise_time'] = Noise_time / 100
 EMULATOR_config['acceleration'] = acceleration
 EMULATOR_config['experiment_duration'] = t_duration

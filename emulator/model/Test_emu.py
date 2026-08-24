@@ -43,3 +43,5 @@ def main():
 
 if __name__ == '__main__':
     main()
+    import Plot_emulator_state
+    Plot_emulator_state.plot_results()

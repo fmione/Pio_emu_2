@@ -25,8 +25,12 @@ def simulate(time_initial, time_final, EMULATOR_state, EMULATOR_design, EMULATOR
 
         nn2 = 0
         for i2 in EMULATOR_config['Species_list']:
-            NEW_EMULATOR_state[i1]['All'][i2]['time'] =  t[1:].flatten().tolist()
-            NEW_EMULATOR_state[i1]['All'][i2]['Value'] = y[1:, nn2].flatten().tolist()
+            NEW_EMULATOR_state[i1]['All'][i2]['time'] = np.append(
+                np.array(NEW_EMULATOR_state[i1]['All'][i2]['time']), t[1:].flatten()
+            ).tolist()
+            NEW_EMULATOR_state[i1]['All'][i2]['Value'] = np.append(
+                np.array(NEW_EMULATOR_state[i1]['All'][i2]['Value']), y[1:, nn2].flatten()
+            ).tolist()
             NEW_EMULATOR_state[i1]['Current'][i2] = float(y[-1, nn2])
             nn2 = nn2 + 1
 
@@ -51,7 +55,7 @@ def sample(time_initial, time_final, EMULATOR_state, EMULATOR_design, EMULATOR_c
             X_state = EMULATOR_state[i1]['All'][i2]['Value']
 
             X_interp = np.interp(ts_sample, tX_state, X_state)
-            X_interp = X_interp * (1 + np.random.normal(0, 1, size=len(X_interp)) * EMULATOR_config['Noise_concentration'])
+            X_interp = X_interp * (1 + np.random.normal(0, 1, size=len(X_interp)) * EMULATOR_config['Noise_concentration'][i2])
 
             NEW_EMULATOR_state[i1]['Sample'][i2]['time'] = np.append(
                 np.array(NEW_EMULATOR_state[i1]['Sample'][i2]['time']), ts_sample
@@ -71,10 +75,14 @@ def write(filename, time_initial, time_final, EMULATOR_state, EMULATOR_design, E
     for i1 in EMULATOR_config['Brxtor_list']:
         for i2 in EMULATOR_config['Species_regression']:
             ts_new = EMULATOR_state[i1]['Sample'][i2]['time']
-            Xs_new = EMULATOR_state[i1]['Sample'][i2]['Value']
-
-            File_dict[i1]['measurements_aggregated'][i2]['measurement_time'] = ts_new
-            File_dict[i1]['measurements_aggregated'][i2][i2] = Xs_new
+            if i2 == 'Xv':
+                Xs_new = np.array(EMULATOR_state[i1]['Sample'][i2]['Value'])*EMULATOR_config['OD_factor'][i1]
+                File_dict[i1]['measurements_aggregated']['OD']['measurement_time'] = ts_new
+                File_dict[i1]['measurements_aggregated']['OD']['OD'] = Xs_new.tolist()
+            else:
+                Xs_new = EMULATOR_state[i1]['Sample'][i2]['Value']
+                File_dict[i1]['measurements_aggregated'][i2]['measurement_time'] = ts_new
+                File_dict[i1]['measurements_aggregated'][i2][i2] = Xs_new
 
         ts_pulse_new = np.array(EMULATOR_design[i1]['Profiles']['time_feed'])
         F_pulse_new = np.array(EMULATOR_design[i1]['Profiles']['Feed_profile'])

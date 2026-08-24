@@ -11,26 +11,11 @@ STATE_DIR = os.environ.get("STATE_DIR", "/app/state")
 MODEL_DIR = os.environ.get("MODEL_DIR", "/app/model")
 
 MEASUREMENT_MAP = {
-    "Xv": {
+    "OD": {
         "topic_suffix": "od_reading/od2",
         "payload_key": "od",
         "parser": "parse_od",
-    },
-    "OD600": {
-        "topic_suffix": "od_reading/od_fused",
-        "payload_key": "od_fused",
-        "parser": None,
-    },
-    "Glucose": {
-        "topic_suffix": "bioreactor/glucose",
-        "payload_key": "glucose",
-        "parser": None,
-    },
-    "Feed_meas": {
-        "topic_suffix": "bioreactor/feed_meas",
-        "payload_key": "feed_meas",
-        "parser": None,
-    },
+    }
 }
 
 logging.basicConfig(
@@ -79,8 +64,6 @@ def build_payload(measurement: str, value: float, timestamp_dt: datetime) -> str
             "channel": "2",
             "ir_led_intensity": 80.0,
         })
-    elif config["parser"] == "parse_od_fused":
-        return json.dumps({"od_fused": value, "timestamp": ts})
     else:
         return json.dumps({config["payload_key"]: value, "timestamp": ts})
 
@@ -120,7 +103,6 @@ def save_measurements(start_datetime):
 
     exp_name = emulator_config["exp_name"]
     mbr_list = emulator_config["Brxtor_list"]
-    OD_factor = emulator_config["OD_factor"]
 
     input_path = os.environ.get("DB_EMULATOR_PATH", os.path.join(MODEL_DIR, "db_emulator.json"))
 
@@ -171,8 +153,7 @@ def save_measurements(start_datetime):
 
             for t, v in new_entries:
                 ts_dt = measurement_time_to_datetime(start_datetime, t)
-                publish_value = v * OD_factor.get(unit, 1.0) if measurement == "Xv" else v
-                publish_measurement(client, unit, exp_name, measurement, publish_value, ts_dt)
+                publish_measurement(client, unit, exp_name, measurement, v, ts_dt)
                 total_published += 1
 
     client.loop_stop()
