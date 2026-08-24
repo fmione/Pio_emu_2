@@ -5,7 +5,7 @@ import time
 import logging
 
 from emulator.config import load_config
-from emulator.mqtt import save_measurements
+from emulator.mqtt import save_measurements, clear_bioreactor_retained_state
 from emulator.db import clean_db, init_db
 from emulator.dosing import load_and_update_design
 from emulator.pidfile import write_pid, remove_pid, should_stop, clear_stop_flag
@@ -73,6 +73,9 @@ def run(start_from_checkpoint=False):
         log.info("Initializing database...")
         start_datetime = init_db()
         _save_state("start_datetime", {"value": start_datetime})
+
+        log.info("Clearing retained MQTT bioreactor state...")
+        clear_bioreactor_retained_state(config["exp_name"], config["Brxtor_list"])
 
         log.info("Initializing emulator state (model)...")
         start_EXP()

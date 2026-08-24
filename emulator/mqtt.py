@@ -88,6 +88,31 @@ def publish_measurement(
     client.publish(topic, payload, qos=1, retain=False)
 
 
+BIOREACTOR_RETAINED_TOPICS = [
+    "bioreactor/cumulative_media_added_ml",
+    "bioreactor/cumulative_alt_media_added_ml",
+    "bioreactor/cumulative_waste_removed_ml",
+    "bioreactor/current_volume_ml",
+    "bioreactor/alt_media_fraction",
+]
+
+
+def clear_bioreactor_retained_state(experiment: str, unit_list: list[str]) -> None:
+    """Publish 0 to bioreactor state topics to clear stale retained MQTT values."""
+    client = mqtt.Client(client_id=f"emulator_clear_{os.getpid()}", protocol=mqtt.MQTTv5)
+    client.connect(MQTT_BROKER, MQTT_PORT, 60)
+    client.loop_start()
+
+    for unit in unit_list:
+        for suffix in BIOREACTOR_RETAINED_TOPICS:
+            topic = f"pioreactor/{unit}/{experiment}/{suffix}"
+            client.publish(topic, "0", qos=1, retain=True)
+
+    client.loop_stop()
+    client.disconnect()
+    log.info(f"Cleared retained bioreactor state for {', '.join(unit_list)}")
+
+
 def find_new_entries(prev_times, curr_times, curr_values):
     prev_set = set(prev_times)
     return [(t, v) for t, v in zip(curr_times, curr_values) if t not in prev_set]
