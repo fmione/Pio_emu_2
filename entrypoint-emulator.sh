@@ -2,26 +2,33 @@
 set -e
 
 EMULATOR_UID="${EMULATOR_UID:-1000}"
+
+# 1. Permisos y Samba (corre como root)
 chown -R ${EMULATOR_UID}:${EMULATOR_UID} /app/model
 smbd --daemon
+
+# Helper: ejecutar como EMULATOR_UID
+run_as_user() {
+    setpriv --reuid=${EMULATOR_UID} --regid=${EMULATOR_UID} --init-groups "$@"
+}
 
 STATE_DIR="${STATE_DIR:-/app/state}"
 START_DT_FILE="$STATE_DIR/start_datetime"
 STOP_FLAG="$STATE_DIR/stopped"
 
-# 1. Si existe el flag de stop, quedarse idle
+# 2. Si existe el flag de stop, quedarse idle
 if [ -f "$STOP_FLAG" ]; then
     echo "Stop flag found — emulator was manually stopped. Staying idle."
     exec sleep infinity
 fi
 
-# 2. Si no existe start_datetime, nunca se inició — idle
+# 3. Si no existe start_datetime, nunca se inició — idle
 if [ ! -f "$START_DT_FILE" ]; then
     echo "No start_datetime found — emulator has never been started. Staying idle."
     exec sleep infinity
 fi
 
-# 3. Verificar si el experimento aún está dentro del horizonte
+# 4. Verificar si el experimento aún está dentro del horizonte
 CAN_CONTINUE=$(python3 -c "
 import json, time, os
 from datetime import datetime, timezone
@@ -59,7 +66,7 @@ if [ "$CAN_CONTINUE" = "yes" ]; then
     echo "Experiment in progress — waiting for MQTT infrastructure..."
     sleep 10
     echo "Resuming emulator from checkpoint"
-    exec python3 -m emulator.cli start --resume
+    exec run_as_user python3 -m emulator.cli start --resume
 elif [ "$CAN_CONTINUE" = "no-checkpoint" ]; then
     echo "No model checkpoint found — stale state from a previous version. Staying idle."
     exec sleep infinity
