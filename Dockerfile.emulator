@@ -1,7 +1,7 @@
 FROM python:3.13-slim
 
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends gcc tzdata && \
+    apt-get install -y --no-install-recommends gcc tzdata samba && \
     rm -rf /var/lib/apt/lists/*
 
 RUN pip install --no-cache-dir numpy scipy pandas paho-mqtt pyyaml
@@ -9,6 +9,7 @@ RUN pip install --no-cache-dir numpy scipy pandas paho-mqtt pyyaml
 WORKDIR /app
 
 COPY emulator/ /app/emulator/
+COPY emulator/smb.conf /etc/samba/smb.conf
 COPY entrypoint-emulator.sh /app/entrypoint-emulator.sh
 RUN chmod +x /app/entrypoint-emulator.sh
 
@@ -22,6 +23,7 @@ ENV MQTT_BROKER=mosquitto
 ENV MQTT_PORT=1883
 ENV DATA_DIR=/app/state
 ENV PIO_DB_PATH=/home/pioreactor/.pioreactor/storage/pioreactor.sqlite
+ENV EMULATOR_UID=1000
 
 ENTRYPOINT ["python", "-m", "emulator.cli"]
 CMD ["start"]

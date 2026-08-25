@@ -1,6 +1,10 @@
 #!/bin/bash
 set -e
 
+EMULATOR_UID="${EMULATOR_UID:-1000}"
+chown -R ${EMULATOR_UID}:${EMULATOR_UID} /app/model
+smbd --daemon
+
 STATE_DIR="${STATE_DIR:-/app/state}"
 START_DT_FILE="$STATE_DIR/start_datetime"
 STOP_FLAG="$STATE_DIR/stopped"

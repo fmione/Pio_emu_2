@@ -80,6 +80,7 @@ services:
       context: .
       dockerfile: Dockerfile.emulator
     entrypoint: ["/bin/bash", "/app/entrypoint-emulator.sh"]
+    hostname: emulator
     volumes:
       - ./.pioreactor:/home/pioreactor/.pioreactor
       - ./.pioreactor-worker:/home/pioreactor/.pioreactor-worker
@@ -96,6 +97,7 @@ services:
       DATA_DIR: /app/state
       PIO_DB_PATH: /home/pioreactor/.pioreactor/storage/pioreactor.sqlite
       PROFILE_YAML_PATH: /home/pioreactor/.pioreactor/experiment_profiles/profile_updated.yaml
+      EMULATOR_UID: ${EMULATOR_UID:-1000}
     depends_on:
       mosquitto:
         condition: service_healthy
