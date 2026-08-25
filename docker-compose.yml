@@ -82,6 +82,7 @@ services:
     entrypoint: ["/bin/bash", "/app/entrypoint-emulator.sh"]
     volumes:
       - ./.pioreactor:/home/pioreactor/.pioreactor
+      - ./.pioreactor-worker:/home/pioreactor/.pioreactor-worker
       - ./emulator:/app/emulator
       - ./emulator/model:/app/model
       - ./emulator/state:/app/state

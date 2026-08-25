@@ -6,7 +6,7 @@ import logging
 
 from emulator.config import load_config
 from emulator.mqtt import save_measurements, clear_bioreactor_retained_state
-from emulator.db import clean_db, init_db
+from emulator.db import clean_db, init_db, clear_bioreactor_cache
 from emulator.dosing import load_and_update_design
 from emulator.pidfile import write_pid, remove_pid, should_stop, clear_stop_flag
 
@@ -69,6 +69,9 @@ def run(start_from_checkpoint=False):
     if not start_from_checkpoint:
         log.info("Cleaning database...")
         clean_db()
+
+        log.info("Clearing bioreactor cache...")
+        clear_bioreactor_cache(config["exp_name"])
 
         log.info("Initializing database...")
         start_datetime = init_db()

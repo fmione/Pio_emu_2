@@ -11,6 +11,16 @@ def _get_db_path():
     return os.environ.get("PIO_DB_PATH", "/home/pioreactor/.pioreactor/storage/pioreactor.sqlite")
 
 
+def _get_persistent_cache_paths():
+    """Return all persistent cache SQLite paths (leader + workers)."""
+    paths = ["/home/pioreactor/.pioreactor/storage/local_persistent_pioreactor_metadata.sqlite"]
+    worker_base = "/home/pioreactor/.pioreactor-worker"
+    worker_cache = f"{worker_base}/storage/local_persistent_pioreactor_metadata.sqlite"
+    if os.path.exists(worker_cache):
+        paths.append(worker_cache)
+    return paths
+
+
 def _get_config():
     config_path = os.environ.get("CONFIG_PATH", "/app/model/EMULATOR_config.json")
     with open(config_path) as f:
@@ -70,6 +80,31 @@ def init_db():
     log.info(f"Initialized experiment '{exp_name}' with workers {mbr_list}")
 
     return start_datetime
+
+
+def clear_bioreactor_cache(exp_name: str) -> None:
+    """Clear cached bioreactor state (cumulative volumes, etc.) for the experiment.
+
+    Iterates over all persistent cache paths (leader + workers).
+    """
+    for cache_path in _get_persistent_cache_paths():
+        if not os.path.exists(cache_path):
+            continue
+        try:
+            conn = sqlite3.connect(cache_path)
+            cursor = conn.execute("SELECT key FROM cache_bioreactor")
+            keys_to_delete = []
+            for (key_bytes,) in cursor:
+                key_str = key_bytes.decode() if isinstance(key_bytes, bytes) else key_bytes
+                if exp_name in key_str:
+                    keys_to_delete.append((key_bytes,))
+            if keys_to_delete:
+                conn.executemany("DELETE FROM cache_bioreactor WHERE key = ?", keys_to_delete)
+                conn.commit()
+                log.info(f"Cleared {len(keys_to_delete)} bioreactor cache entries from {cache_path}")
+            conn.close()
+        except Exception as e:
+            log.warning(f"Failed to clear bioreactor cache at {cache_path}: {e}")
 
 
 def get_dosing_events(start_datetime):

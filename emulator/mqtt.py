@@ -1,5 +1,6 @@
 import json
 import os
+import time
 import logging
 from datetime import datetime, timedelta, timezone
 
@@ -10,14 +11,6 @@ MQTT_PORT = int(os.environ.get("MQTT_PORT", "1883"))
 STATE_DIR = os.environ.get("STATE_DIR", "/app/state")
 MODEL_DIR = os.environ.get("MODEL_DIR", "/app/model")
 
-MEASUREMENT_MAP = {
-    "OD": {
-        "topic_suffix": "od_reading/od2",
-        "payload_key": "od",
-        "parser": "parse_od",
-    }
-}
-
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s",
@@ -25,6 +18,10 @@ logging.basicConfig(
 )
 log = logging.getLogger("emulator.mqtt")
 
+
+# ---------------------------------------------------------------------------
+# State persistence (last_published.json)
+# ---------------------------------------------------------------------------
 
 def _last_published_path():
     return os.path.join(STATE_DIR, "last_published.json")
@@ -44,49 +41,118 @@ def _save_last_published(data):
         json.dump(data, f)
 
 
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+
 def measurement_time_to_datetime(start_datetime: datetime, mt_hours: float) -> datetime:
     return start_datetime + timedelta(hours=mt_hours)
 
 
-def build_payload(measurement: str, value: float, timestamp_dt: datetime) -> str | None:
-    config = MEASUREMENT_MAP.get(measurement)
-    if config is None:
-        return None
+def find_new_entries(prev_times, curr_times, curr_values):
+    prev_set = set(prev_times)
+    return [(t, v) for t, v in zip(curr_times, curr_values) if t not in prev_set]
 
-    ts = timestamp_dt.isoformat()
 
-    if config["parser"] == "parse_od":
-        return json.dumps({
+# ---------------------------------------------------------------------------
+# Measurement handlers
+# ---------------------------------------------------------------------------
+
+def publish_od_reading(client, unit, experiment, data, start_datetime, is_first):
+    """Publish OD readings to pioreactor/{unit}/{exp}/od_reading/od2."""
+    curr_times = data.get("measurement_time", [])
+    curr_values = data.get("OD", [])
+
+    if not curr_times or not curr_values:
+        return 0
+
+    if is_first:
+        new_entries = list(zip(curr_times, curr_values))
+    else:
+        prev = _load_last_published()
+        prev_data = prev.get(unit, {}).get("measurements_aggregated", {}).get("OD", {})
+        prev_times = prev_data.get("measurement_time", [])
+        new_entries = find_new_entries(prev_times, curr_times, curr_values)
+
+    if not new_entries:
+        return 0
+
+    topic = f"pioreactor/{unit}/{experiment}/od_reading/od2"
+    for t, v in new_entries:
+        ts_dt = measurement_time_to_datetime(start_datetime, t)
+        payload = json.dumps({
             "calibrated": 0,
-            "timestamp": ts,
+            "timestamp": ts_dt.isoformat(),
             "angle": "90",
-            "od": value,
+            "od": v,
             "channel": "2",
             "ir_led_intensity": 80.0,
         })
+        client.publish(topic, payload, qos=1, retain=False)
+
+    log.info(f"{unit}/od_reading/od2: {len(new_entries)} new points")
+    return len(new_entries)
+
+
+WASTE_REMOVAL_RATIO = float(os.environ.get("WASTE_REMOVAL_RATIO", "2.0"))
+
+
+def publish_dosing_event(client, unit, experiment, data, start_datetime, is_first):
+    """Publish feed pulses as dosing_events to MQTT for mqtt_to_db_streaming.
+
+    For each add_media pulse, a remove_waste event is emitted to keep volume balanced.
+    Waste volume = add_media volume * WASTE_REMOVAL_RATIO.
+    """
+    curr_times = data.get("measurement_time", [])
+    curr_volumes = data.get("Feed_meas", [])
+
+    if not curr_times or not curr_volumes:
+        return 0
+
+    if is_first:
+        new_entries = list(zip(curr_times, curr_volumes))
     else:
-        return json.dumps({config["payload_key"]: value, "timestamp": ts})
+        prev = _load_last_published()
+        prev_feed = prev.get(unit, {}).get("measurements_aggregated", {}).get("Feed_meas", {})
+        prev_times = prev_feed.get("measurement_time", [])
+        new_entries = find_new_entries(prev_times, curr_times, curr_volumes)
+
+    if not new_entries:
+        return 0
+
+    topic = f"pioreactor/{unit}/{experiment}/dosing_events"
+    for t, volume in new_entries:
+        ts_dt = measurement_time_to_datetime(start_datetime, t)
+
+        add_payload = json.dumps({
+            "timestamp": ts_dt.isoformat(),
+            "volume_change": volume,
+            "event": "add_media",
+            "source_of_event": "dosing_automation",
+        })
+        client.publish(topic, add_payload, qos=1, retain=False)
+
+        waste_payload = json.dumps({
+            "timestamp": ts_dt.isoformat(),
+            "volume_change": volume * WASTE_REMOVAL_RATIO,
+            "event": "remove_waste",
+            "source_of_event": "dosing_automation",
+        })
+        client.publish(topic, waste_payload, qos=1, retain=False)
+
+    log.info(f"{unit}/dosing_events: {len(new_entries)} add+remove pulses published")
+    return len(new_entries) * 2
 
 
-def publish_measurement(
-    client: mqtt.Client,
-    unit: str,
-    experiment: str,
-    measurement: str,
-    value: float,
-    timestamp_dt: datetime,
-) -> None:
-    config = MEASUREMENT_MAP.get(measurement)
-    if config is None:
-        return
+MEASUREMENT_HANDLERS = {
+    "OD": publish_od_reading,
+    "Feed_meas": publish_dosing_event,
+}
 
-    topic = f"pioreactor/{unit}/{experiment}/{config['topic_suffix']}"
-    payload = build_payload(measurement, value, timestamp_dt)
-    if payload is None:
-        return
 
-    client.publish(topic, payload, qos=1, retain=False)
-
+# ---------------------------------------------------------------------------
+# Bioreactor retained state cleanup
+# ---------------------------------------------------------------------------
 
 BIOREACTOR_RETAINED_TOPICS = [
     "bioreactor/cumulative_media_added_ml",
@@ -96,27 +162,68 @@ BIOREACTOR_RETAINED_TOPICS = [
     "bioreactor/alt_media_fraction",
 ]
 
+AUTOMATION_JOB_NAMES = [
+    "monitor", "stirring", "od_reading", "temperature_automation",
+    "growth_rate_calculating", "dosing_automation", "led_automation",
+    "add_media", "add_alt_media", "remove_waste",
+]
+
+
+def _clear_automation_lost_states(client, experiment, unit_list):
+    """Subscribe to all unit/experiment topics and publish empty to any $state topic."""
+    cleared = 0
+    for unit in unit_list:
+        sub_topic = f"pioreactor/{unit}/{experiment}/#"
+        received = []
+
+        def on_message(c, userdata, msg):
+            if msg.topic.endswith("/$state") and msg.payload:
+                received.append(msg.topic)
+
+        client.subscribe(sub_topic, qos=1)
+        client.on_message = on_message
+        client.loop()
+        time.sleep(0.5)
+        client.loop()
+
+        for topic in received:
+            client.publish(topic, "", qos=1, retain=True)
+            cleared += 1
+
+        client.unsubscribe(sub_topic)
+
+    return cleared
+
 
 def clear_bioreactor_retained_state(experiment: str, unit_list: list[str]) -> None:
-    """Publish 0 to bioreactor state topics to clear stale retained MQTT values."""
-    client = mqtt.Client(client_id=f"emulator_clear_{os.getpid()}", protocol=mqtt.MQTTv5)
-    client.connect(MQTT_BROKER, MQTT_PORT, 60)
-    client.loop_start()
+    """Clear stale retained MQTT values: bioreactor state + automation $state topics.
 
-    for unit in unit_list:
-        for suffix in BIOREACTOR_RETAINED_TOPICS:
-            topic = f"pioreactor/{unit}/{experiment}/{suffix}"
-            client.publish(topic, "0", qos=1, retain=True)
+    Runs multiple passes to ensure the monitor's re-publishes are overwritten.
+    """
+    for attempt in range(3):
+        client = mqtt.Client(client_id=f"emulator_clear_{os.getpid()}_{attempt}", protocol=mqtt.MQTTv5)
+        client.connect(MQTT_BROKER, MQTT_PORT, 60)
+        client.loop_start()
 
-    client.loop_stop()
-    client.disconnect()
-    log.info(f"Cleared retained bioreactor state for {', '.join(unit_list)}")
+        for unit in unit_list:
+            for suffix in BIOREACTOR_RETAINED_TOPICS:
+                topic = f"pioreactor/{unit}/{experiment}/{suffix}"
+                client.publish(topic, "0", qos=1, retain=True)
+
+        cleared = _clear_automation_lost_states(client, experiment, unit_list)
+
+        client.loop_stop()
+        client.disconnect()
+
+        if attempt < 2:
+            time.sleep(1)
+
+    log.info(f"Cleared retained bioreactor state + {cleared} automation $state topics for {', '.join(unit_list)}")
 
 
-def find_new_entries(prev_times, curr_times, curr_values):
-    prev_set = set(prev_times)
-    return [(t, v) for t, v in zip(curr_times, curr_values) if t not in prev_set]
-
+# ---------------------------------------------------------------------------
+# Main entry point
+# ---------------------------------------------------------------------------
 
 def save_measurements(start_datetime):
     if isinstance(start_datetime, str):
@@ -158,28 +265,10 @@ def save_measurements(start_datetime):
         measurements = curr[unit].get("measurements_aggregated", {})
 
         for measurement, data in measurements.items():
-            curr_times = data.get("measurement_time", [])
-            curr_values = data.get(measurement, [])
-
-            if not curr_times or not curr_values:
+            handler = MEASUREMENT_HANDLERS.get(measurement)
+            if handler is None:
                 continue
-
-            if is_first:
-                new_entries = list(zip(curr_times, curr_values))
-            else:
-                prev_data = prev.get(unit, {}).get("measurements_aggregated", {}).get(measurement, {})
-                prev_times = prev_data.get("measurement_time", [])
-                new_entries = find_new_entries(prev_times, curr_times, curr_values)
-
-            if not new_entries:
-                continue
-
-            log.info(f"{unit}/{measurement}: {len(new_entries)} new points")
-
-            for t, v in new_entries:
-                ts_dt = measurement_time_to_datetime(start_datetime, t)
-                publish_measurement(client, unit, exp_name, measurement, v, ts_dt)
-                total_published += 1
+            total_published += handler(client, unit, exp_name, data, start_datetime, is_first)
 
     client.loop_stop()
     client.disconnect()
