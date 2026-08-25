@@ -79,6 +79,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.emulator
+    container_name: emulator
     entrypoint: ["/bin/bash", "/app/entrypoint-emulator.sh"]
     hostname: emulator
     volumes:

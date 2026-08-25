@@ -55,7 +55,7 @@ for i in range(mbr_list.shape[0]):
 time_execution = []
 
 # Acceleration factor: 1 = real-time, or 2, 4, 60, 54000
-acceleration = 1
+acceleration = 4
 
 # ---------------------------------------------------------------------------
 # Build and save configuration
