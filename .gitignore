@@ -5,7 +5,7 @@
 .pioreactor/exportable_datasets/
 .pioreactor/plugins/
 .pioreactor/experiment_profiles/*
-!.pioreactor/experiment_profiles/profile_updated.yaml
+!.pioreactor/experiment_profiles/profile_update.yaml
 
 # === Worker (todo es regenerado por entrypoint, excepto config.ini) ===
 .pioreactor-worker/*

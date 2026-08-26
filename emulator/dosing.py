@@ -8,7 +8,7 @@ from emulator.db import get_dosing_events, _get_config
 
 log = logging.getLogger("emulator.dosing")
 
-DEFAULT_YAML_PATH = "/home/pioreactor/.pioreactor/experiment_profiles/profile_updated.yaml"
+DEFAULT_YAML_PATH = "/home/pioreactor/.pioreactor/experiment_profiles/profile_update.yaml"
 
 # Cache of the last converted YAML profile: pulses are anchored to the
 # simulation time at which the file content was first seen, so repeated
@@ -41,7 +41,7 @@ def _import_yaml_to_profile(model_dir):
 
 def _load_yaml_profile(model_dir, brxtor_list, sim_time):
     """
-    Load feed pulses from profile_updated.yaml (times relative to the moment
+    Load feed pulses from profile_update.yaml (times relative to the moment
     the file was written). The file is re-anchored to the current simulation
     time only when its content changes; between changes the cached absolute
     pulses are reused.
@@ -110,7 +110,7 @@ def load_and_update_design(model_dir, start_datetime, brxtor_list):
     simulation step.
 
     acceleration == 1: read dosing events from the Pioreactor DB.
-    acceleration != 1: read pulses from profile_updated.yaml via the model's
+    acceleration != 1: read pulses from profile_update.yaml via the model's
     yaml_to_profile (times relative to the current simulation time).
     """
     design_path = os.path.join(model_dir, "EMULATOR_design.json")
