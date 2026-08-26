@@ -5,7 +5,7 @@ import json
 # Experiment configuration
 # ---------------------------------------------------------------------------
 t_duration = 15.0
-exp_name = 'Exp0H'
+exp_name = 'Exp0J'
 
 mbr_list = np.array(['pio01', 'worker01'])
 
