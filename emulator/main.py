@@ -82,6 +82,15 @@ def run(start_from_checkpoint=False):
 
         log.info("Initializing emulator state (model)...")
         start_EXP()
+
+        yaml_path = os.environ.get(
+            "PROFILE_YAML_PATH",
+            "/home/pioreactor/.pioreactor/experiment_profiles/profile_update.yaml",
+        )
+        if os.path.exists(yaml_path):
+            os.remove(yaml_path)
+            log.info(f"Removed stale feed profile: {yaml_path}")
+
         log.info("Emulator initialized at t=0")
     else:
         start_dt_data = _load_state("start_datetime")

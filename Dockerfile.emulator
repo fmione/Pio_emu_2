@@ -4,6 +4,8 @@ RUN apt-get update && \
     apt-get install -y --no-install-recommends gcc tzdata samba && \
     rm -rf /var/lib/apt/lists/*
 
+RUN useradd -u 1000 -m pioreactor || true
+
 RUN pip install --no-cache-dir numpy scipy pandas paho-mqtt pyyaml
 
 WORKDIR /app

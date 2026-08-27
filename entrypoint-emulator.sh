@@ -4,7 +4,7 @@ set -e
 EMULATOR_UID="${EMULATOR_UID:-1000}"
 
 # 1. Permisos y Samba (corre como root)
-chown -R ${EMULATOR_UID}:${EMULATOR_UID} /app/model
+chown -R ${EMULATOR_UID}:${EMULATOR_UID} /app/model /app/state
 smbd --daemon
 
 # Helper: ejecutar como EMULATOR_UID
@@ -66,7 +66,7 @@ if [ "$CAN_CONTINUE" = "yes" ]; then
     echo "Experiment in progress — waiting for MQTT infrastructure..."
     sleep 10
     echo "Resuming emulator from checkpoint"
-    exec run_as_user python3 -m emulator.cli start --resume
+    run_as_user python3 -m emulator.cli start --resume
 elif [ "$CAN_CONTINUE" = "no-checkpoint" ]; then
     echo "No model checkpoint found — stale state from a previous version. Staying idle."
     exec sleep infinity

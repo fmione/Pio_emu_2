@@ -201,7 +201,7 @@ def clear_bioreactor_retained_state(experiment: str, unit_list: list[str]) -> No
     Runs multiple passes to ensure the monitor's re-publishes are overwritten.
     """
     for attempt in range(3):
-        client = mqtt.Client(client_id=f"emulator_clear_{os.getpid()}_{attempt}", protocol=mqtt.MQTTv5)
+        client = mqtt.Client(client_id=f"emulator_clear_{os.getpid()}_{attempt}", protocol=mqtt.MQTTv311)
         client.connect(MQTT_BROKER, MQTT_PORT, 60)
         client.loop_start()
 
