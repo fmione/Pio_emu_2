@@ -13,7 +13,7 @@ DEFAULT_YAML_PATH = "/home/pioreactor/.pioreactor/experiment_profiles/profile_up
 # Cache of the last converted YAML profile: pulses are anchored to the
 # simulation time at which the file content was first seen, so repeated
 # reads do not push the scheduled doses forward in time.
-_yaml_cache = {"hash": None, "profiles": None, "warned": None}
+_yaml_cache = {"hash": None, "mtime": None, "profiles": None, "warned": None}
 
 
 def _get_acceleration():
@@ -55,9 +55,11 @@ def _load_yaml_profile(model_dir, brxtor_list, sim_time):
         return None
 
     with open(yaml_path, "rb") as f:
-        digest = hashlib.md5(f.read()).hexdigest()
+        content = f.read()
+    digest = hashlib.md5(content).hexdigest()
+    mtime = os.path.getmtime(yaml_path)
 
-    if digest == _yaml_cache["hash"]:
+    if digest == _yaml_cache["hash"] and mtime == _yaml_cache["mtime"]:
         return _yaml_cache["profiles"]
 
     try:
@@ -74,6 +76,7 @@ def _load_yaml_profile(model_dir, brxtor_list, sim_time):
         return None
 
     _yaml_cache["hash"] = digest
+    _yaml_cache["mtime"] = mtime
     _yaml_cache["profiles"] = profiles
     _yaml_cache["warned"] = None
     parts = [f"{u}={len(p['time_feed'])} pulses" for u, p in profiles.items()]
