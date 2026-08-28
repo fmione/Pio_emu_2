@@ -8,6 +8,7 @@ from emulator.config import load_config
 from emulator.mqtt import save_measurements, clear_bioreactor_retained_state
 from emulator.db import clean_db, init_db, clear_bioreactor_cache
 from emulator.dosing import load_and_update_design
+from emulator.end_experiment import end_experiment
 from emulator.pidfile import write_pid, remove_pid, should_stop, clear_stop_flag
 
 log = logging.getLogger("emulator.main")
@@ -138,6 +139,7 @@ def run(start_from_checkpoint=False):
 
             if sim_time >= experiment_duration:
                 log.info(f"Experiment complete: sim_time={sim_time:.4f}h >= {experiment_duration}h")
+                end_experiment(config["exp_name"])
                 break
 
             time.sleep(interval_seconds)
