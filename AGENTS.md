@@ -1,6 +1,6 @@
-# PioDocker — Pioreactor Local Emulator
+# PioDocker — Pioreactor Local Environment
 
-Locally emulate via Docker the full Pioreactor stack without Raspberry Pi hardware. `TESTING=1` substitutes GPIO/I2C/ADC.
+Locally run via Docker the full Pioreactor stack without Raspberry Pi hardware. `TESTING=1` substitutes GPIO/I2C/ADC.
 
 ## Architecture
 
@@ -20,7 +20,6 @@ Locally emulate via Docker the full Pioreactor stack without Raspberry Pi hardwa
 | `Dockerfile.worker` / `entrypoint-worker.sh` | Worker image — same setup but no DB init, no MQTT-to-DB streaming |
 | `local_app.py` | Wraps upstream `create_app()` with SPA catch-all + MQTT broker address rewrite (`mosquitto` → `localhost`) |
 | `worker_app.py` | Thin wrapper around `create_app()` |
-| `simulate.sh` | Creates experiment, registers workers, runs experiment profile |
 
 ## Development commands
 
@@ -30,7 +29,6 @@ docker compose exec backend pio run <job>          # launch job
 docker compose exec backend pio kill --all-jobs     # kill all jobs
 docker compose exec backend pio logs -n 10         # recent logs
 docker compose exec backend pio mqtt               # live MQTT feed
-./simulate.sh [experiment]                         # auto-simulation
 ```
 
 ## Config & state
@@ -48,6 +46,5 @@ docker compose exec backend pio mqtt               # live MQTT feed
 ## Gotchas
 
 - Run `docker network create lab-network` before first `docker compose up`.
-- `simulate.sh` detects `sudo` requirement for Docker.
 - `local_app.py` rewrites `broker_address=mosquitto` → `localhost` in `/api/config/shared` so the browser JS can reach MQTT via WebSocket on `:9001`.
 - `test-mqtt-cli` contains a one-shot `mosquitto_pub` command to inject fake OD data for manual testing.

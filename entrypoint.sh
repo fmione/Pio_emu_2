@@ -104,7 +104,10 @@ db_path = '/home/pioreactor/.pioreactor/storage/local_intermittent_pioreactor_me
 if os.path.exists(db_path):
     c = sqlite3.connect(db_path)
     for table in ['cache_pwm_locks', 'cache_pwm_dc', 'cache_led_locks', 'cache_leds', 'cache_debounce']:
-        c.execute(f'DELETE FROM {table}')
+        try:
+            c.execute(f'DELETE FROM {table}')
+        except sqlite3.OperationalError:
+            pass
     c.execute('DELETE FROM pio_job_metadata')
     c.commit()
     c.close()
@@ -219,8 +222,9 @@ sed -i 's/if get_assigned_experiment_name(unit) != experiment:/if (get_assigned_
 
 huey_consumer pioreactor.web.tasks.huey -n -w 8 -f -C -d 0.01 &
 
-# Wait for Mosquitto to be ready, then start MQTT-to-DB streaming
+# Wait for Mosquitto to be ready, then start MQTT-to-DB streaming and monitor
 (sleep 5 && pio run mqtt_to_db_streaming) &
+(sleep 15 && pio run monitor) &
 
 /usr/sbin/sshd
 

@@ -1,6 +1,6 @@
 # PioDocker
 
-Local Docker emulator for the full [Pioreactor](https://pioreactor.com/) stack — an open-source bioreactor for microbial cultivation — without needing any Raspberry Pi hardware.
+Local Docker environment for the full [Pioreactor](https://pioreactor.com/) stack — an open-source bioreactor for microbial cultivation — without needing any Raspberry Pi hardware.
 
 ## What is this?
 
@@ -78,12 +78,11 @@ Access the UI at: **http://localhost:4999**
 
 Experiment profiles are located in `.pioreactor/experiment_profiles/`:
 
-- **`simulate.yaml`** — Stirring (500 RPM), thermostat (30°C), and OD reading
-- **`profile_initial.yaml`** — Same configuration as simulate
+- **`profile_initial.yaml`** — Stirring (500 RPM), thermostat (30°C), and OD reading
 - **`profile_dosing.yaml`** — Adds media dosing (0.5ml) and waste removal (1.0ml) hourly
 
 ```bash
-docker compose exec backend pio run experiment_profile execute .pioreactor/experiment_profiles/simulate.yaml <experiment_name>
+docker compose exec backend pio run experiment_profile execute .pioreactor/experiment_profiles/profile_initial.yaml <experiment_name>
 ```
 
 ### CLI commands

@@ -4,7 +4,7 @@
 .pioreactor/ui/
 .pioreactor/exportable_datasets/
 .pioreactor/plugins/
-.pioreactor/experiment_profiles/
+.pioreactor/experiment_profiles/*
 
 # === Worker (todo es regenerado por entrypoint, excepto config.ini) ===
 .pioreactor-worker/*
@@ -14,3 +14,6 @@
 pioreactor.log
 __pycache__/
 *.pyc
+
+# === Environment file ===
+.env
