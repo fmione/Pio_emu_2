@@ -1,6 +1,6 @@
 import json
 import time
-
+import numpy as np
 import method_emulator
 
 from pathlib import Path
@@ -37,23 +37,41 @@ def run_emu():
     if EMULATOR_config['acceleration'] == 54000:
         time_initial = 0
         time_final = EMULATOR_config['experiment_duration']
-
     # Update absolute reference time
     EMULATOR_state['time_absolute'] = time_final_absolute
     EMULATOR_state['time'] = time_final
 
     # Read feeding profile from controller output (DTWIN_design.json)
-    try:
-        design_file = str(Path.cwd().parent) + '/controller_dag/' + 'DTWIN_design.json'
-        with open(design_file) as json_file:
-            DTWIN_design_profile = json.load(json_file)
-        for i1 in EMULATOR_config['Brxtor_list']:
-            EMULATOR_design[i1]['Profiles']['time_feed'] = DTWIN_design_profile[i1]['Profiles']['time_feed']
-            EMULATOR_design[i1]['Profiles']['Feed_profile'] = DTWIN_design_profile[i1]['Profiles']['Feed_profile']
-    except Exception:
-        pass
+    # try:
+    #     design_file = str(Path.cwd().parent) + '/controller_dag/' + 'DTWIN_design.json'
+    #     config_file = str(Path.cwd().parent) + '/controller_dag/' + 'DTWIN_config.json'
+    #     with open(design_file) as json_file:
+    #         DTWIN_design_profile = json.load(json_file)
+    #     with open(config_file) as json_file:
+    #         DTWIN_config = json.load(json_file)
+    #     exp_name = list(DTWIN_config.keys())[0]
+    #     process_list = [proc for proc in DTWIN_config[exp_name]  if proc !='shared']
+    #     for i1 in process_list:
+    #         pio_name = DTWIN_config[exp_name][i1]['equipment']
+    #         ts_pulse_old = np.array(EMULATOR_design[pio_name]['Profiles']['time_feed'])
+    #         F_pulse_old = np.array(EMULATOR_design[pio_name]['Profiles']['Feed_profile'])
+    #         F_pulse_old = F_pulse_old[ts_pulse_old < time_initial]
+    #         ts_pulse_old = ts_pulse_old[ts_pulse_old < time_initial]
+            
+    #         ts_pulse_new = np.array(DTWIN_design_profile[exp_name][i1]['Profiles']['time_feed'])
+    #         F_pulse_new = np.array(DTWIN_design_profile[exp_name][i1]['Profiles']['Feed_profile'])
+    #         F_pulse_new = F_pulse_new[ts_pulse_new  >= time_initial]
+    #         ts_pulse_new = ts_pulse_new[ts_pulse_new  >= time_initial]
+            
+    #         EMULATOR_design[pio_name]['Profiles']['time_feed'] = ts_pulse_old.tolist() + ts_pulse_new.tolist()
+    #         EMULATOR_design[pio_name]['Profiles']['Feed_profile'] = F_pulse_old.tolist() + F_pulse_new.tolist()
+    #         # EMULATOR_design[pio_name]['Profiles']['time_feed'] = DTWIN_design_profile[exp_name][i1]['Profiles']['time_feed']
+    #         # EMULATOR_design[pio_name]['Profiles']['Feed_profile'] = DTWIN_design_profile[exp_name][i1]['Profiles']['Feed_profile']
+    #     print('success in reading profiles')
+    # except Exception:
+    #     print('error in reading profiles')
 
-    # Persist the updated design
+    # # Persist the updated design
     with open('EMULATOR_design.json', "w") as outfile:
         json.dump(EMULATOR_design, outfile)
 

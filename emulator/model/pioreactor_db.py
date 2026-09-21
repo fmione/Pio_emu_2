@@ -36,7 +36,7 @@ def get_config():
     with open(f"EMULATOR_config.json") as json_file:   
         emulator_config = json.load(json_file)
 
-    return emulator_config["exp_name"], emulator_config["Brxtor_list"], emulator_config["OD_factor"]
+    return emulator_config["exp_name"], emulator_config["Brxtor_list"], emulator_config['pio_emu_backend'] in (True, "true", "True", "1", 1)
 
 
 def init():
@@ -115,23 +115,21 @@ def save_measurements(start_datetime):
     Saves OD readings and dosing events in the pioreactor database.
     """
     
-    exp_name, mbr_list, OD_factor = get_config()
+    exp_name, mbr_list, _ = get_config()
     with open("db_emulator.json") as json_file:   
         db_emulator = json.load(json_file)
 
     # OD readings        
     values_list = []
     for unit in mbr_list:
-        t_od=db_emulator[unit]["measurements_aggregated"]["Xv"]["measurement_time"]
-        m_od=[x * OD_factor[unit] for x in db_emulator[unit]["measurements_aggregated"]["Xv"]["Xv"]]
+        t_od=db_emulator[unit]["measurements_aggregated"]["OD"]["measurement_time"]
+        m_od=db_emulator[unit]["measurements_aggregated"]["OD"]["OD"]
         
         values_list.extend(
             f"('{exp_name}', '{unit}', '{(datetime.fromisoformat(start_datetime) + timedelta(hours=ti)).isoformat()}', {od}, 90, 2)"
             for ti, od in list(zip(t_od, m_od))
-        )
-    
-    
-    
+        )  
+        
     if len(values_list) == 0:
         return  
     else:
@@ -140,7 +138,6 @@ def save_measurements(start_datetime):
     od_readings_sql = f"""INSERT OR IGNORE INTO od_readings
         (experiment, pioreactor_unit, timestamp, od_reading, angle, channel) VALUES {values};"""
     
-
     
     client, db_path = connect_ssh()
     stdin, _, _ = client.exec_command(f"cat > /tmp/od_readings.sql")
@@ -159,8 +156,8 @@ def save_measurements(start_datetime):
     # dosing events
     values_list = []
     for unit in mbr_list:
-        # take current time from Xv measurement
-        current_time = db_emulator[unit]["measurements_aggregated"]["Xv"]["measurement_time"][-1]
+        # take current time from OD measurement
+        current_time = db_emulator[unit]["measurements_aggregated"]["OD"]["measurement_time"][-1]
 
         t_dosing=db_emulator[unit]["measurements_aggregated"]["Feed_meas"]["measurement_time"]
         m_dosing=db_emulator[unit]["measurements_aggregated"]["Feed_meas"]["Feed_meas"]
@@ -190,35 +187,3 @@ def save_measurements(start_datetime):
     
     client.close()
 
-def clean_profile_folder():
-   """ 
-   Removes all YAML files in the pioreactor container
-   """
-
-   client, _ = connect_ssh()
-
-   exp_profile_path = f"/home/pioreactor/.pioreactor/experiment_profiles/*"
-   _, stdout, _ = client.exec_command(f'rm -f {exp_profile_path}')
-   stdout.channel.recv_exit_status()
-
-   client.close() 
-
-
-def get_yaml_updated(filename="profile_update.yaml"):
-   """ 
-   Gets current YAML file from the pioreactor container
-   """
-
-   client, _ = connect_ssh()
-
-   try:
-       exp_profile_path = f"/home/pioreactor/.pioreactor/experiment_profiles/{filename}"
-       
-       sftp = client.open_sftp()
-       sftp.stat(exp_profile_path)
-       sftp.get(exp_profile_path, filename)
-       sftp.close()
-   except:
-       print('Missing file')
-
-   client.close() 

@@ -5,7 +5,7 @@ import json
 # Experiment configuration
 # ---------------------------------------------------------------------------
 t_duration = 24.0
-exp_name = 'Exp0J_acc'
+exp_name = 'ExpEA'
 
 mbr_list = np.array(['pio01', 'worker01'])
 
@@ -21,7 +21,7 @@ mbr_group = {'pioreactors': ['pio01', 'worker01']}
 species_IC = [1.0, 2, 0, 0.011, 0,0]
 
 # Feed profile:
-time_feed = [np.arange(5, t_duration, 1), np.arange(5, t_duration, 2)]#np.array([])#np.arange(5, t_duration, 1)#
+time_feed = [np.arange(5.5, t_duration, 2), np.arange(6, t_duration, 2)]#np.array([])#np.arange(5, t_duration, 1)#
 
 profile_design = {}
 for n1,i1 in enumerate(mbr_group['pioreactors']):
@@ -43,10 +43,12 @@ Noise_time = 1
 Glucose_feed = [2] * len(mbr_list)
 
 # Reference kinetic parameters
-Params_ref = np.array([0.39565891, 0.20655672, 1.27312121, 0.067108  , 0.31610876,
-       0.38588422, 0.36423799, 0.37617746, 0.24299876, 0.00392031,
-       0.07543501, 0.04302811, 0.08356779, 0.84832334, 0.60040242,
-       0.63635726, 0.5526098 ])
+Params_ref = np.array([3.80786794e-01, 2.67581384e-01, 1.81436299e+00, 1.92605862e-01,
+                       1.528352201e-01, 8.42498721e-01, 4.83782068e-01, 5.97946767e-01,
+                       1.13100605e-01, 7.68813662e-04, 1.29639213e-01, 9.27668472e-02,
+                       5.92064683e-01 ])
+
+
 Params = {}
 for i in range(mbr_list.shape[0]):
     Params[i] = Params_ref.tolist() + [0.5, 0.5]
@@ -56,6 +58,7 @@ time_execution = []
 
 # Acceleration factor: 1 = real-time, or 2, 4, 60, 54000
 acceleration = 4
+pio_emu_backend = False
 
 # ---------------------------------------------------------------------------
 # Build and save configuration
@@ -93,8 +96,9 @@ EMULATOR_config['number_br'] = len(mbr_list)
 EMULATOR_config['time_execution'] = time_execution
 EMULATOR_config['Noise_concentration'] = Noise_concentration
 EMULATOR_config['Noise_time'] = Noise_time / 100
-EMULATOR_config['acceleration'] = acceleration
 EMULATOR_config['experiment_duration'] = t_duration
+EMULATOR_config['acceleration'] = acceleration
+EMULATOR_config['pio_emu_backend'] = pio_emu_backend
 
 with open('EMULATOR_config.json', "w") as outfile:
     json.dump(EMULATOR_config, outfile)

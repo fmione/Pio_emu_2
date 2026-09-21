@@ -84,14 +84,21 @@ def write(filename, time_initial, time_final, EMULATOR_state, EMULATOR_design, E
                 File_dict[i1]['measurements_aggregated'][i2]['measurement_time'] = ts_new
                 File_dict[i1]['measurements_aggregated'][i2][i2] = Xs_new
 
+        ts_pulse_old = np.array(File_dict[i1]['measurements_aggregated']['Feed_meas']['measurement_time'])
+        F_pulse_old = np.array(File_dict[i1]['measurements_aggregated']['Feed_meas']['Feed_meas'])
+        # if len(ts_pulse_old)>0:
+        #     t_last = ts_pulse_old[-1]
+        # else:
+        #     t_last = 0
+
         ts_pulse_new = np.array(EMULATOR_design[i1]['Profiles']['time_feed'])
         F_pulse_new = np.array(EMULATOR_design[i1]['Profiles']['Feed_profile'])
 
-        F_pulse_new = F_pulse_new[ts_pulse_new < time_final]
-        ts_pulse_new = ts_pulse_new[ts_pulse_new < time_final]
+        F_pulse_new = F_pulse_new[(ts_pulse_new < time_final) & (ts_pulse_new  >= time_initial)]
+        ts_pulse_new = ts_pulse_new[(ts_pulse_new < time_final) & (ts_pulse_new  >= time_initial)]
 
-        File_dict[i1]['measurements_aggregated']['Feed_meas']['measurement_time'] = ts_pulse_new.tolist()
-        File_dict[i1]['measurements_aggregated']['Feed_meas']['Feed_meas'] = F_pulse_new.tolist()
+        File_dict[i1]['measurements_aggregated']['Feed_meas']['measurement_time'] = ts_pulse_old.tolist() + ts_pulse_new.tolist()
+        File_dict[i1]['measurements_aggregated']['Feed_meas']['Feed_meas'] = F_pulse_old.tolist() + F_pulse_new.tolist()
 
     with open(filename, "w") as outfile:
         json.dump(File_dict, outfile)

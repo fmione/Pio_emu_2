@@ -3,7 +3,7 @@ import json
 import os
 import logging
 import sys
-
+import time
 from emulator.db import get_dosing_events, _get_config
 
 log = logging.getLogger("emulator.dosing")
@@ -20,13 +20,26 @@ def _get_acceleration():
     try:
         return float(_get_config().get("acceleration", 1))
     except Exception:
-        return 1.0
+        return 1
 
 
 def _get_sim_time(model_dir):
     try:
-        with open(os.path.join(model_dir, "EMULATOR_state.json")) as f:
-            return float(json.load(f)["time"])
+        with open(os.path.join(model_dir, 'EMULATOR_design.json')) as json_file:
+            EMULATOR_design = json.load(json_file)
+
+        acceleration = _get_acceleration()
+
+        time_start_absolute = EMULATOR_design['time_start_absolute']
+
+        if acceleration != 1 and _yaml_cache.get("mtime") != None:
+            time_final_absolute = _yaml_cache.get("mtime")
+        else:
+            time_final_absolute = time.time()
+
+        time_final = acceleration * (time_final_absolute - time_start_absolute) / 3600
+        log.info(f"SIM TIME: {time_final}")
+        return time_final
     except Exception:
         return None
 
