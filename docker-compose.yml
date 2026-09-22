@@ -42,7 +42,8 @@ services:
       HARDWARE: "1.2"
       MQTT_EXTERNAL_HOST: ${MQTT_EXTERNAL_HOST:-localhost}
     depends_on:
-      - mosquitto
+      mosquitto:
+        condition: service_healthy
     restart: unless-stopped
     networks:
     - lab-network
@@ -70,7 +71,8 @@ services:
       MODEL_VERSION: "1.1"
       HARDWARE: "1.2"
     depends_on:
-      - mosquitto
+      mosquitto:
+        condition: service_healthy
     restart: unless-stopped
     networks:
     - lab-network
