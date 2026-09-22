@@ -48,39 +48,9 @@ services:
     networks:
     - lab-network
 
-  worker01:
-    build:
-      context: .
-      dockerfile: Dockerfile.worker
-      args:
-        PIO_VERSION: ${PIO_VERSION:-26.6.0}
-    hostname: worker01
-    ports:
-      - "2223:22"
-    volumes:
-      - ./.pioreactor-worker:/home/pioreactor/.pioreactor
-      - worker01_cache:/tmp/pioreactor_cache
-    environment:
-      HOSTNAME: worker01
-      TESTING: "1"
-      GLOBAL_CONFIG: /home/pioreactor/.pioreactor/config.ini
-      DOT_PIOREACTOR: /home/pioreactor/.pioreactor
-      RUN_PIOREACTOR: /tmp/pioreactor_cache
-      PLUGINS_DEV: /home/pioreactor/plugins_dev
-      MODEL_NAME: pioreactor_20ml
-      MODEL_VERSION: "1.1"
-      HARDWARE: "1.2"
-    depends_on:
-      mosquitto:
-        condition: service_healthy
-    restart: unless-stopped
-    networks:
-    - lab-network
-
 volumes:
   mosquitto_data:
   pioreactor_cache:
-  worker01_cache:
 networks:
   lab-network:
     external: true

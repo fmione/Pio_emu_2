@@ -174,18 +174,18 @@ conn.close()
 print('Default calibrations for pio01 created.')
 PYEOF
 
-# Register leader and worker01 as workers
+# Register leader and all workers (from WORKER_NAMES, set by compose.sh)
 python3 -c "
 import sqlite3, os
 db = os.environ.get('DB', '$DB')
+names = os.environ.get('WORKER_NAMES', 'pio01 worker01').split()
 conn = sqlite3.connect(db)
-conn.execute('''INSERT OR IGNORE INTO workers (pioreactor_unit, is_active, model_name, model_version, added_at)
-    VALUES ('pio01', 1, 'pioreactor_20ml', '1.1', strftime('%Y-%m-%dT%H:%M:%S+00:00', 'now'))''')
-conn.execute('''INSERT OR IGNORE INTO workers (pioreactor_unit, is_active, model_name, model_version, added_at)
-    VALUES ('worker01', 1, 'pioreactor_20ml', '1.1', strftime('%Y-%m-%dT%H:%M:%S+00:00', 'now'))''')
+for name in names:
+    conn.execute('''INSERT OR IGNORE INTO workers (pioreactor_unit, is_active, model_name, model_version, added_at)
+        VALUES (?, 1, 'pioreactor_20ml', '1.1', strftime('%Y-%m-%dT%H:%M:%S+00:00', 'now'))''', (name,))
 conn.commit()
 conn.close()
-print('Workers registered: pio01 and worker01 (20ml v1.1)')
+print('Workers registered: ' + ' '.join(names) + ' (20ml v1.1)')
 " 2>/dev/null || true
 
 # Ensure ownership after creating calibrations

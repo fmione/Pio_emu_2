@@ -4,6 +4,7 @@ set -e
 CAL_DIR="/home/pioreactor/.pioreactor/storage/calibrations"
 SQL_DIR="/app/packaging/shared-assets/sql"
 HARDWARE_DIR="/home/pioreactor/.pioreactor/hardware"
+UNIT="${HOSTNAME:-worker01}"
 
 # Create hardware config files
 _create_hw_yaml() {
@@ -96,7 +97,7 @@ now = datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%S+00:00')
 
 for pump in ['media_pump', 'waste_pump']:
     cal_name = f'default_{pump}_cal'
-    unit = 'worker01'
+    unit = os.environ.get('HOSTNAME', 'worker01')
     yaml_content = f'''calibration_type: simple_peristaltic_pump
 calibration_name: "{cal_name}"
 calibrated_on_pioreactor_unit: "{unit}"
@@ -126,7 +127,7 @@ for pump in ['media_pump', 'waste_pump']:
     )
 conn.commit()
 conn.close()
-print('Default calibrations for worker01 created.')
+print(f'Default calibrations for {os.environ.get("HOSTNAME", "worker01")} created.')
 PYEOF
 
 # Fix ownership after creating everything
@@ -162,15 +163,15 @@ def on_message(client, userdata, msg):
         cleared.add(topic)
         print(f'Cleared retained state: {topic}')
 
-c = mqtt.Client(client_id='clear-states-worker01', protocol=mqtt.MQTTv5)
+c = mqtt.Client(client_id='clear-states-$UNIT', protocol=mqtt.MQTTv5)
 c.connect('mosquitto', 1883, 60)
-c.subscribe('pioreactor/worker01/#', qos=1)
+c.subscribe('pioreactor/$UNIT/#', qos=1)
 c.on_message = on_message
 c.loop_start()
 time.sleep(5)
 c.loop_stop()
 c.disconnect()
-print(f'Cleared {len(cleared)} stale job states for worker01')
+print(f'Cleared {len(cleared)} stale job states for $UNIT')
 " 2>/dev/null || true
 
 huey_consumer pioreactor.web.tasks.huey -n -w 4 -f -C -d 0.01 &
@@ -193,5 +194,5 @@ sed -i 's/while not utils.is_pio_job_running("mqtt_to_db_streaming"):/while Fals
 
 /usr/sbin/sshd
 
-echo "Worker01 ready on port 4999"
+echo "$UNIT ready on port 4999"
 exec flask --app worker_app run -p 4999 --host 0.0.0.0
