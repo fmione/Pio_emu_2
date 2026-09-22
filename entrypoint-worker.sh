@@ -179,7 +179,17 @@ huey_consumer pioreactor.web.tasks.huey -n -w 4 -f -C -d 0.01 &
 # Patch: skip mqtt_to_db_streaming check since worker is not the real leader
 sed -i 's/while not utils.is_pio_job_running("mqtt_to_db_streaming"):/while False and not utils.is_pio_job_running("mqtt_to_db_streaming"):/' \
   /app/core/pioreactor/background_jobs/monitor.py 2>/dev/null || true
-(sleep 5 && pio run monitor) &
+(
+  sleep 5
+  for attempt in $(seq 1 10); do
+    if pio run monitor; then
+      exit 0
+    fi
+    echo "monitor failed to start (attempt ${attempt}/10), retrying in 5s..."
+    sleep 5
+  done
+  echo "monitor failed to start after 10 attempts"
+) &
 
 # Patches to disable mock data emission in TESTING mode (external data via MQTT only)
 if [ "$TESTING" = "1" ]; then

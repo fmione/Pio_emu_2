@@ -238,8 +238,28 @@ fi
 huey_consumer pioreactor.web.tasks.huey -n -w 8 -f -C -d 0.01 &
 
 # Wait for Mosquitto to be ready, then start MQTT-to-DB streaming and monitor
-(sleep 5 && pio run mqtt_to_db_streaming) &
-(sleep 15 && pio run monitor) &
+(
+  sleep 5
+  for attempt in $(seq 1 10); do
+    if pio run mqtt_to_db_streaming; then
+      exit 0
+    fi
+    echo "mqtt_to_db_streaming failed to start (attempt ${attempt}/10), retrying in 5s..."
+    sleep 5
+  done
+  echo "mqtt_to_db_streaming failed to start after 10 attempts"
+) &
+(
+  sleep 15
+  for attempt in $(seq 1 10); do
+    if pio run monitor; then
+      exit 0
+    fi
+    echo "monitor failed to start (attempt ${attempt}/10), retrying in 5s..."
+    sleep 5
+  done
+  echo "monitor failed to start after 10 attempts"
+) &
 
 /usr/sbin/sshd
 
