@@ -235,6 +235,7 @@ def save_measurements(start_datetime):
 
     exp_name = emulator_config["exp_name"]
     mbr_list = emulator_config["Brxtor_list"]
+    acceleration = emulator_config["acceleration"]
 
     input_path = os.environ.get("DB_EMULATOR_PATH", os.path.join(MODEL_DIR, "db_emulator.json"))
 
@@ -267,6 +268,9 @@ def save_measurements(start_datetime):
         for measurement, data in measurements.items():
             handler = MEASUREMENT_HANDLERS.get(measurement)
             if handler is None:
+                continue
+            # avoid manual MQTT publish for dosing in real time
+            if measurement == "Feed_meas" and acceleration == 1:
                 continue
             total_published += handler(client, unit, exp_name, data, start_datetime, is_first)
 
