@@ -84,6 +84,10 @@ def clean_db():
     Deletes all entries related to the current experiment from the pioreactor database.
     """
 
+    profile_update_path = "/opt/airflow/experiment_profiles/profile_update.yaml"
+    if os.path.exists(profile_update_path):
+        os.remove(profile_update_path)
+
     client, db_path = connect_ssh()
     exp_name, _, _ = get_config()
     
@@ -140,15 +144,24 @@ def save_measurements(start_datetime):
     
     
     client, db_path = connect_ssh()
-    stdin, _, _ = client.exec_command(f"cat > /tmp/od_readings.sql")
+    stdin, _, stderr  = client.exec_command(f"cat > /tmp/od_readings.sql")
     stdin.write(od_readings_sql)
     stdin.close()
 
-    _, _, stderr = client.exec_command(f"sqlite3 {db_path} < /tmp/od_readings.sql")
+    cat_error = stderr.read().decode().strip()
+    cat_status = stdin.channel.recv_exit_status()
 
-    error = stderr.read().decode().strip()
-    if error:
-        raise RuntimeError(f"SQLite error:\n{error}")
+    if cat_status != 0 or cat_error:
+        raise RuntimeError(
+            cat_error or f"Cat SQL od_readings file error with code: {cat_status}"
+        )
+
+    sqlite_stdin, _, sqlite_stderr = client.exec_command(f"sqlite3 {db_path} < /tmp/od_readings.sql")
+    sqlite_stdin.channel.recv_exit_status()
+
+    sqlite_stderr = stderr.read().decode().strip()
+    if sqlite_stderr:
+        raise RuntimeError(f"SQLite od_readings error:\n{sqlite_stderr}")
     
     client.close()
 
@@ -175,15 +188,24 @@ def save_measurements(start_datetime):
         (experiment, pioreactor_unit, timestamp, event, volume_change_ml) VALUES {values};"""
     
     client, db_path = connect_ssh()
-    stdin, _, _ = client.exec_command(f"cat > /tmp/dosing_events.sql")
+    stdin, _, stderr = client.exec_command(f"cat > /tmp/dosing_events.sql")
     stdin.write(dosing_events_sql)
     stdin.close()
 
-    _, _, stderr = client.exec_command(f"sqlite3 {db_path} < /tmp/dosing_events.sql")
+    cat_error = stderr.read().decode().strip()
+    cat_status = stdin.channel.recv_exit_status()
 
-    error = stderr.read().decode().strip()
-    if error:
-        raise RuntimeError(f"SQLite error:\n{error}")
+    if cat_status != 0 or cat_error:
+        raise RuntimeError(
+            cat_error or f"Cat SQL dosing_events file error with code: {cat_status}"
+        )
+
+    sqlite_stdin, _, sqlite_stderr = client.exec_command(f"sqlite3 {db_path} < /tmp/dosing_events.sql")
+    sqlite_stdin.channel.recv_exit_status()
+    
+    sqlite_stderr = stderr.read().decode().strip()
+    if sqlite_stderr:
+        raise RuntimeError(f"SQLite dosing_events error:\n{sqlite_stderr}")
     
     client.close()
 

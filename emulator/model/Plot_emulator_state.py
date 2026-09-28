@@ -46,4 +46,7 @@ def plot_results():
     
 if __name__ == "__main__":
     plot_results()
-
+    with open('EMULATOR_design.json') as f:
+        EMULATOR_design = json.load(f)
+    print('profile pio01: ', EMULATOR_design['pio01']['Profiles']['time_feed'])
+    print('profile worker01: ', EMULATOR_design['worker01']['Profiles']['time_feed'])

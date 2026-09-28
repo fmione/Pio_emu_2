@@ -86,10 +86,6 @@ def write(filename, time_initial, time_final, EMULATOR_state, EMULATOR_design, E
 
         ts_pulse_old = np.array(File_dict[i1]['measurements_aggregated']['Feed_meas']['measurement_time'])
         F_pulse_old = np.array(File_dict[i1]['measurements_aggregated']['Feed_meas']['Feed_meas'])
-        # if len(ts_pulse_old)>0:
-        #     t_last = ts_pulse_old[-1]
-        # else:
-        #     t_last = 0
 
         ts_pulse_new = np.array(EMULATOR_design[i1]['Profiles']['time_feed'])
         F_pulse_new = np.array(EMULATOR_design[i1]['Profiles']['Feed_profile'])
