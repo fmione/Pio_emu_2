@@ -6,11 +6,6 @@ import os
 import argparse
 import logging
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] %(message)s",
-    datefmt="%Y-%m-%dT%H:%M:%S",
-)
 log = logging.getLogger("emulator.cli")
 
 
@@ -43,8 +38,16 @@ def cmd_status(args):
 
 
 def cmd_reset(args):
+    from emulator.logging_setup import reset_log_file
+    from emulator.pidfile import is_running
+
     state_dir = os.environ.get("STATE_DIR", "/app/state")
     model_dir = os.environ.get("MODEL_DIR", "/app/model")
+
+    if is_running():
+        log.warning(
+            "Emulator is still running — its log handle keeps the current file alive until it exits"
+        )
 
     for fname in ["EMULATOR_state.json", "EMULATOR_design.json", "EMULATOR_prediction.json",
                    "db_emulator.json", "start_datetime", "emulator.pid", "stopped",
@@ -56,13 +59,17 @@ def cmd_reset(args):
 
     # Model-generated runtime files (never the sources / EMULATOR_config.json)
     for fname in ["EMULATOR_state.json", "EMULATOR_design.json", "db_emulator.json",
-                   "measurements_atline.csv"]:
+                  "measurements_atline.csv"]:
         path = os.path.join(model_dir, fname)
         if os.path.exists(path):
             os.remove(path)
             log.info(f"Removed model/{fname}")
 
+    for name in reset_log_file():
+        log.info(f"Removed log {name}")
+
     log.info("Reset complete")
+
 
 
 def main():

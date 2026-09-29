@@ -11,11 +11,6 @@ MQTT_PORT = int(os.environ.get("MQTT_PORT", "1883"))
 STATE_DIR = os.environ.get("STATE_DIR", "/app/state")
 MODEL_DIR = os.environ.get("MODEL_DIR", "/app/model")
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] %(message)s",
-    datefmt="%Y-%m-%dT%H:%M:%S",
-)
 log = logging.getLogger("emulator.mqtt")
 
 
