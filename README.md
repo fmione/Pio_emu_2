@@ -106,7 +106,7 @@ docker compose logs -f emulator
 1. `start` initializes the experiment in SQLite, runs the model `start_EXP()`, then enters a loop:
    - Call the model `run_emu()` (compute time step → ODE integration → sample with noise → persist JSONs + CSV)
    - Publish new points to MQTT (OD readings, glucose, feed events) by diffing the last iteration
-   - Sleep for `interval_seconds` (default: 5s)
+   - Sleep for `interval_seconds` (default: 120s)
 2. `stop` writes a flag file; the loop exits cleanly on the next iteration.
 3. `reset` clears all state files — use before starting a new experiment.
 4. After power cut, the container auto-restarts (`restart: unless-stopped`) and `--resume` continues from the last checkpoint.
@@ -117,7 +117,7 @@ docker compose logs -f emulator
 |---|---|---|
 | `acceleration` | Simulated hours per real hour (1=real-time, 60=fast, 54000=instant) | `60` |
 | `experiment_duration` | Total experiment length in simulated hours | `24.0` |
-| `interval_seconds` | Seconds between simulation steps | `5` |
+| `interval_seconds` | Seconds between simulation steps (not in `EMULATOR_config.json`; fallback in `emulator/config.py`) | `120` |
 | `exp_name` | Experiment name (must match Pioreactor) | `Exp0H` |
 | `Noise_concentration` | Measurement noise fraction (0.0099 = ~1%) | `0.0099` |
 

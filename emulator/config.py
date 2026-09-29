@@ -5,6 +5,7 @@ import logging
 log = logging.getLogger("emulator.config")
 
 DEFAULT_CONFIG = os.environ.get("CONFIG_PATH", "/app/model/EMULATOR_config.json")
+DEFAULT_INTERVAL_SECONDS = 120
 
 
 def load_config(config_path=None):

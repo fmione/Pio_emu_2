@@ -4,7 +4,7 @@ import sys
 import time
 import logging
 
-from emulator.config import load_config
+from emulator.config import load_config, DEFAULT_INTERVAL_SECONDS
 from emulator.mqtt import save_measurements, clear_bioreactor_retained_state
 from emulator.db import clean_db, init_db, clear_bioreactor_cache
 from emulator.dosing import load_and_update_design
@@ -108,7 +108,7 @@ def run(start_from_checkpoint=False):
     write_pid()
     clear_stop_flag()
 
-    interval_seconds = config.get("interval_seconds", 5)
+    interval_seconds = config.get("interval_seconds", DEFAULT_INTERVAL_SECONDS)
 
     log.info(f"Starting simulation loop: duration={experiment_duration}h, interval={interval_seconds}s")
 
