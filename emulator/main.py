@@ -47,6 +47,40 @@ def _load_model_json(name):
     return None
 
 
+def _clear_design_profiles(brxtor_list):
+    """Empty the planned feed profile of every bioreactor.
+
+    acceleration == 1 means the emulator runs at the same pace as the real
+    Pioreactor, so it must not feed anything the real Pioreactor did not dose:
+    with an empty profile the ODE only applies pulses confirmed by dosing_events
+    (see dosing.load_and_update_design -> db.get_dosing_events).
+    """
+    design = _load_model_json("EMULATOR_design.json")
+    if design is None:
+        log.warning("EMULATOR_design.json missing, cannot clear initial feed profile")
+        return
+
+    dropped = {}
+    for unit in brxtor_list:
+        if unit not in design:
+            continue
+        profiles = design[unit].get("Profiles")
+        if not profiles:
+            continue
+        dropped[unit] = len(profiles.get("time_feed", []))
+        profiles["time_feed"] = []
+        profiles["Feed_profile"] = []
+
+    with open(_model_path("EMULATOR_design.json"), "w") as f:
+        json.dump(design, f)
+
+    parts = [f"{u}={n}" for u, n in dropped.items()]
+    log.info(
+        "acceleration=1: discarded initial feed profile "
+        f"({', '.join(parts)} pulses) — feed driven only by dosing_events"
+    )
+
+
 def _load_model_modules():
     """Import the unmodified model files. They use CWD-relative paths, so we run from MODEL_DIR."""
     os.chdir(MODEL_DIR)
@@ -83,6 +117,9 @@ def run(start_from_checkpoint=False):
 
         log.info("Initializing emulator state (model)...")
         start_EXP()
+
+        if config["acceleration"] == 1:
+            _clear_design_profiles(config["Brxtor_list"])
 
         yaml_path = os.environ.get(
             "PROFILE_YAML_PATH",
@@ -125,12 +162,6 @@ def run(start_from_checkpoint=False):
             if state is None:
                 log.error("Model state missing, aborting")
                 break
-
-            # Discrete time-step mode: the model reads `iter`/`iter+1` but never advances it.
-            if time_execution and state["iter"] + 1 < len(time_execution):
-                state["iter"] = state["iter"] + 1
-                with open(_model_path("EMULATOR_state.json"), "w") as f:
-                    json.dump(state, f)
 
             sim_time = state["time"]
             log.info(f"Step done: sim_time={sim_time:.4f}h / {experiment_duration}h")
