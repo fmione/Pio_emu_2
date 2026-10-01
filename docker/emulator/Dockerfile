@@ -11,8 +11,8 @@ RUN pip install --no-cache-dir numpy scipy pandas paho-mqtt pyyaml
 WORKDIR /app
 
 COPY emulator/ /app/emulator/
-COPY emulator/smb.conf /etc/samba/smb.conf
-COPY entrypoint-emulator.sh /app/entrypoint-emulator.sh
+COPY docker/emulator/smb.conf /etc/samba/smb.conf
+COPY docker/emulator/entrypoint.sh /app/entrypoint-emulator.sh
 RUN chmod +x /app/entrypoint-emulator.sh
 
 RUN mkdir -p /app/state /app/model

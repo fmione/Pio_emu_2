@@ -44,7 +44,7 @@ Access the UI at: **http://localhost:4999**
 
 | Service | Port(s) | Role | Volumes |
 |---|---|---|---|
-| `mosquitto` | 1883 (MQTT TCP), 9001 (MQTT WebSocket) | MQTT message broker | `mosquitto/mosquitto.conf` |
+| `mosquitto` | 1883 (MQTT TCP), 9001 (MQTT WebSocket) | MQTT message broker | `docker/mosquitto/mosquitto.conf` |
 | `backend` | 4999 (Flask/UI), 2222 (SSH) | Leader pio01 — API, UI, jobs, DB streaming | `.pioreactor/` |
 | `worker01` | 4999 (Flask), 2223 (SSH) | Worker — executes assigned jobs | `.pioreactor-worker/` |
 | `emulator` | — | Bioreactor simulator (ODE model + MQTT publish) | `.pioreactor/`, `emulator/state/`, `emulator/configs/` |
@@ -67,7 +67,7 @@ Access the UI at: **http://localhost:4999**
 
 - **`.pioreactor/config.ini`** — Leader configuration.
 - **`.pioreactor-worker/config.ini`** — Worker configuration (same structure, `cluster.topology.leader_address=backend`).
-- **`mosquitto/mosquitto.conf`** — MQTT broker: ports 1883/9001, anonymous access, persistence enabled.
+- **`docker/mosquitto/mosquitto.conf`** — MQTT broker: ports 1883/9001, anonymous access, persistence enabled.
 
 ### MQTT connection
 
@@ -158,7 +158,7 @@ ssh -p 2223 pioreactor@localhost   # worker01
 ## Gotchas
 
 1. **External network required**: `docker network create lab-network` must exist before `docker compose up`.
-2. **MQTT address rewriting**: `local_app.py` rewrites `broker_address=mosquitto` → `broker_address=localhost` in `/api/config/shared` so the browser can reach the WebSocket on `:9001`.
+2. **MQTT address rewriting**: `docker/backend/local_app.py` rewrites `broker_address=mosquitto` → `broker_address=localhost` in `/api/config/shared` so the browser can reach the WebSocket on `:9001`.
 3. **Ephemeral state**: Entrypoints regenerate hardware YAML, DB, calibrations, and UI descriptors on every start. Only `config.ini` is tracked in git.
 4. **Upstream patches**: Dockerfiles patch `export_experiment_data.py` to use `DOT_PIOREACTOR` instead of relative paths.
 5. **Emulator starts idle**: The emulator container starts with `sleep infinity`. You must run `docker compose exec -d emulator python -m emulator.cli start` to begin simulation.

@@ -9,7 +9,7 @@ Locally emulate via Docker the full Pioreactor stack without Raspberry Pi hardwa
 - Workers run as separate containers, **not** processes inside backend.
 - Both containers run `flask --app <local_app|worker_app> run -p 4999`.
 - Huey uses **SqliteHuey**, not Redis. Consumer: `-w 8` (backend) / `-w 4` (worker).
-- MQTT is the message bus. Frontend is pre-compiled React served by Flask (SPA catch-all in `local_app.py:27`).
+- MQTT is the message bus. Frontend is pre-compiled React served by Flask (SPA catch-all in `docker/backend/local_app.py:27`).
 - **Emulator** runs a standalone ODE-based bioreactor simulation, publishing OD/glucose data via MQTT.
 - Network `lab-network` must exist externally: `docker network create lab-network`.
 
@@ -17,11 +17,11 @@ Locally emulate via Docker the full Pioreactor stack without Raspberry Pi hardwa
 
 | File | Purpose |
 |---|---|
-| `Dockerfile.backend` / `entrypoint.sh` | Leader image — creates hardware YAML, DB, calibrations, registers workers, clears stale MQTT states, starts Huey + MQTT-to-DB + Flask |
-| `Dockerfile.worker` / `entrypoint-worker.sh` | Worker image — same setup but no DB init, no MQTT-to-DB streaming |
-| `Dockerfile.emulator` | Emulator image — Python + numpy/scipy/pandas + paho-mqtt |
-| `local_app.py` | Wraps upstream `create_app()` with SPA catch-all + MQTT broker address rewrite (`mosquitto` → `localhost`) |
-| `worker_app.py` | Thin wrapper around `create_app()` |
+| `docker/backend/Dockerfile` / `docker/backend/entrypoint.sh` | Leader image — creates hardware YAML, DB, calibrations, registers workers, clears stale MQTT states, starts Huey + MQTT-to-DB + Flask |
+| `docker/worker/Dockerfile` / `docker/worker/entrypoint.sh` | Worker image — same setup but no DB init, no MQTT-to-DB streaming |
+| `docker/emulator/Dockerfile` | Emulator image — Python + numpy/scipy/pandas + paho-mqtt |
+| `docker/backend/local_app.py` | Wraps upstream `create_app()` with SPA catch-all + MQTT broker address rewrite (`mosquitto` → `localhost`) |
+| `docker/worker/worker_app.py` | Thin wrapper around `create_app()` |
 | `emulator/cli.py` | CLI: `start`, `stop`, `status`, `reset` |
 | `emulator/main.py` | Execution loop: calls model `start_EXP()` / `run_emu()`, then exposes data via MQTT |
 | `emulator/model/` | **Verbatim copy** of the Airflow `emulator_dag` scripts — NEVER edit. Runs on its own (CWD = model dir) and generates the JSON/CSV files |
@@ -78,7 +78,7 @@ The emulator replaces the old Airflow DAG. It runs as a standalone Docker contai
 
 ## Logs
 
-- `docker compose logs emulator` only shows what **PID 1** writes, i.e. the 4 `echo` lines of `entrypoint-emulator.sh`. The emulator process only appears there if the entrypoint itself launched it (`entrypoint-emulator.sh:69`, resume branch).
+- `docker compose logs emulator` only shows what **PID 1** writes, i.e. the 4 `echo` lines of `docker/emulator/entrypoint.sh`. The emulator process only appears there if the entrypoint itself launched it (`docker/emulator/entrypoint.sh:69`, resume branch).
 - If you start the emulator manually (`docker compose exec [-d] emulator python -m emulator.cli start`) its output goes to the exec stream, not to the container log. **Use the log file instead** — it is written by every process regardless of how it was started, and is readable from the host:
   ```bash
   tail -f emulator/state/emulator.log
@@ -93,7 +93,7 @@ The emulator replaces the old Airflow DAG. It runs as a standalone Docker contai
 ## Gotchas
 
 - Run `docker network create lab-network` before first `docker compose up`.
-- `local_app.py` rewrites `broker_address=mosquitto` → `localhost` in `/api/config/shared` so the browser JS can reach MQTT via WebSocket on `:9001`.
+- `docker/backend/local_app.py` rewrites `broker_address=mosquitto` → `localhost` in `/api/config/shared` so the browser JS can reach MQTT via WebSocket on `:9001`.
 - `test-mqtt-cli` contains a one-shot `mosquitto_pub` command to inject fake OD data for manual testing.
 - Emulator must be stopped before `reset` (or it will fail).
 - After power cut, emulator resumes from last checkpoint automatically.

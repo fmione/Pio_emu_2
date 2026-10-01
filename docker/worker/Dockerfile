@@ -31,12 +31,10 @@ RUN sed -i '1s/^/import os\n/' /app/core/pioreactor/actions/leader/export_experi
     sed -i 's|sorted(Path(".pioreactor/plugins/exportable_datasets").glob|sorted((Path(os.environ.get("DOT_PIOREACTOR", ".")) / "plugins" / "exportable_datasets").glob|' \
     /app/core/pioreactor/actions/leader/export_experiment_data.py
 
-COPY local_app.py /app/local_app.py
+COPY docker/worker/worker_app.py /app/worker_app.py
 
 RUN mkdir -p /home/pioreactor/.pioreactor/storage \
              /home/pioreactor/.pioreactor/plugins \
-             /home/pioreactor/.pioreactor/exportable_datasets \
-             /home/pioreactor/.pioreactor/experiment_profiles \
              /tmp/pioreactor_cache/cache && \
     chown -R pioreactor:pioreactor /home/pioreactor/.pioreactor
 
@@ -55,9 +53,7 @@ ENV BLINKA_FORCEBOARD=RASPBERRY_PI_3A_PLUS
 ENV MODEL_NAME=pioreactor_20ml
 ENV MODEL_VERSION=1.1
 
-EXPOSE 4999
-
-COPY entrypoint.sh /entrypoint.sh
+COPY docker/worker/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
 ENTRYPOINT ["/entrypoint.sh"]
