@@ -9,17 +9,17 @@ Locally run via Docker the full Pioreactor stack without Raspberry Pi hardware. 
 - Workers run as separate containers, **not** processes inside backend.
 - Both containers run `flask --app <local_app|worker_app> run -p 4999`.
 - Huey uses **SqliteHuey**, not Redis. Consumer: `-w 8` (backend) / `-w 4` (worker).
-- MQTT is the message bus. Frontend is pre-compiled React served by Flask (SPA catch-all in `local_app.py:27`).
+- MQTT is the message bus. Frontend is pre-compiled React served by Flask (SPA catch-all in `docker/backend/local_app.py:27`).
 - Network `lab-network` must exist externally: `docker network create lab-network`.
 
 ## Key files
 
 | File | Purpose |
 |---|---|
-| `Dockerfile.backend` / `entrypoint.sh` | Leader image — creates hardware YAML, DB, calibrations, registers workers, clears stale MQTT states, starts Huey + MQTT-to-DB + Flask |
-| `Dockerfile.worker` / `entrypoint-worker.sh` | Worker image — same setup but no DB init, no MQTT-to-DB streaming |
-| `local_app.py` | Wraps upstream `create_app()` with SPA catch-all + MQTT broker address rewrite (`mosquitto` → `localhost`) |
-| `worker_app.py` | Thin wrapper around `create_app()` |
+| `docker/backend/Dockerfile` / `docker/backend/entrypoint.sh` | Leader image — creates hardware YAML, DB, calibrations, registers workers, clears stale MQTT states, starts Huey + MQTT-to-DB + Flask |
+| `docker/worker/Dockerfile` / `docker/worker/entrypoint.sh` | Worker image — same setup but no DB init, no MQTT-to-DB streaming |
+| `docker/backend/local_app.py` | Wraps upstream `create_app()` with SPA catch-all + MQTT broker address rewrite (`mosquitto` → `localhost`) |
+| `docker/worker/worker_app.py` | Thin wrapper around `create_app()` |
 
 ## Development commands
 
@@ -46,5 +46,5 @@ docker compose exec backend pio mqtt               # live MQTT feed
 ## Gotchas
 
 - Run `docker network create lab-network` before first `docker compose up`.
-- `local_app.py` rewrites `broker_address=mosquitto` → `localhost` in `/api/config/shared` so the browser JS can reach MQTT via WebSocket on `:9001`.
+- `docker/backend/local_app.py` rewrites `broker_address=mosquitto` → `localhost` in `/api/config/shared` so the browser JS can reach MQTT via WebSocket on `:9001`.
 - `test-mqtt-cli` contains a one-shot `mosquitto_pub` command to inject fake OD data for manual testing.

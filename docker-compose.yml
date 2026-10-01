@@ -5,7 +5,7 @@ services:
       - "1883:1883"
       - "9001:9001"
     volumes:
-      - ./mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf
+      - ./docker/mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf
       - mosquitto_data:/mosquitto/data
     healthcheck:
       test: ["CMD-SHELL", "mosquitto_sub -t '$$SYS/#' -C 1 -i healthcheck -W 3 || exit 1"]
@@ -20,7 +20,7 @@ services:
   backend:
     build:
       context: .
-      dockerfile: Dockerfile.backend
+      dockerfile: docker/backend/Dockerfile
       args:
         PIO_VERSION: ${PIO_VERSION:-26.6.0}
     hostname: pio01
@@ -51,7 +51,7 @@ services:
   worker01:
     build:
       context: .
-      dockerfile: Dockerfile.worker
+      dockerfile: docker/worker/Dockerfile
       args:
         PIO_VERSION: ${PIO_VERSION:-26.6.0}
     hostname: worker01
