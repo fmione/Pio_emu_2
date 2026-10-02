@@ -38,7 +38,6 @@ def _get_sim_time(model_dir):
             time_final_absolute = time.time()
 
         time_final = acceleration * (time_final_absolute - time_start_absolute) / 3600
-        log.info(f"SIM TIME: {time_final}")
         return time_final
     except Exception:
         return None
