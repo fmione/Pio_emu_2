@@ -42,12 +42,14 @@ Locally emulate via Docker the full Pioreactor stack without Raspberry Pi hardwa
 
 ## Development commands
 
+`./emu` is the shortcut for the emulator CLI (thin wrapper over `docker compose exec [-d] emulator python -m emulator.cli ...`): `./emu up`, `./emu start [-d] [--resume]`, `./emu stop`, `./emu status`, `./emu reset` (no `-d`), `./emu logs [-f] [N]` (tails the host copy of `emulator/state/emulator.log`). It refuses to run if the `emulator` container is not up.
+
 ```
 docker compose up --build                          # full stack
 docker compose up -d emulator                      # start emulator only
-docker compose exec emulator python -m emulator.cli status   # check status
-docker compose exec emulator python -m emulator.cli stop     # graceful stop
-docker compose exec emulator python -m emulator.cli reset    # clear state, restart
+./emu status                                        # check status
+./emu stop                                          # graceful stop
+./emu reset                                         # clear state, restart
 docker compose exec backend pio run <job>          # launch job
 docker compose exec backend pio kill --all-jobs     # kill all jobs
 docker compose exec backend pio logs -n 10         # recent logs
@@ -79,8 +81,9 @@ The emulator replaces the old Airflow DAG. It runs as a standalone Docker contai
 ## Logs
 
 - `docker compose logs emulator` only shows what **PID 1** writes, i.e. the 4 `echo` lines of `docker/emulator/entrypoint.sh`. The emulator process only appears there if the entrypoint itself launched it (`docker/emulator/entrypoint.sh:69`, resume branch).
-- If you start the emulator manually (`docker compose exec [-d] emulator python -m emulator.cli start`) its output goes to the exec stream, not to the container log. **Use the log file instead** — it is written by every process regardless of how it was started, and is readable from the host:
+- If you start the emulator manually (`./emu start` / `docker compose exec [-d] emulator python -m emulator.cli start`) its output goes to the exec stream, not to the container log. **Use the log file instead** — it is written by every process regardless of how it was started, and is readable from the host:
   ```bash
+  ./emu logs -f
   tail -f emulator/state/emulator.log
   docker compose exec emulator tail -f /app/state/emulator.log
   ```

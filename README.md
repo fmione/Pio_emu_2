@@ -81,23 +81,42 @@ Access the UI at: **http://localhost:4999**
 
 The emulator runs as a standalone container that starts idle. It must be started manually via CLI.
 
+Use the `./emu` helper (a wrapper around `docker compose exec emulator python -m emulator.cli ...`):
+
 ```bash
-# Start the emulator (runs in background)
-docker compose exec -d emulator python -m emulator.cli start
+# Bring up the emulator container (starts idle)
+./emu up
+
+# Start the emulator (foreground) or detached with -d
+./emu start
+./emu start -d
 
 # Start with resume from last checkpoint
-docker compose exec -d emulator python -m emulator.cli start --resume
+./emu start -d --resume
 
 # Check status
-docker compose exec emulator python -m emulator.cli status
+./emu status
 
 # Stop gracefully (exits on next loop iteration)
-docker compose exec emulator python -m emulator.cli stop
+./emu stop
 
 # Reset all state (clears data, ready for new experiment)
-docker compose run --rm emulator reset
+./emu reset
 
-# View emulator logs
+# View emulator logs (host copy of emulator/state/emulator.log)
+./emu logs
+./emu logs -f        # follow
+./emu logs 200       # last 200 lines
+```
+
+Equivalent raw commands:
+
+```bash
+docker compose exec -d emulator python -m emulator.cli start
+docker compose exec -d emulator python -m emulator.cli start --resume
+docker compose exec emulator python -m emulator.cli status
+docker compose exec emulator python -m emulator.cli stop
+docker compose run --rm emulator reset
 docker compose logs -f emulator
 ```
 
@@ -161,8 +180,8 @@ ssh -p 2223 pioreactor@localhost   # worker01
 2. **MQTT address rewriting**: `docker/backend/local_app.py` rewrites `broker_address=mosquitto` → `broker_address=localhost` in `/api/config/shared` so the browser can reach the WebSocket on `:9001`.
 3. **Ephemeral state**: Entrypoints regenerate hardware YAML, DB, calibrations, and UI descriptors on every start. Only `config.ini` is tracked in git.
 4. **Upstream patches**: Dockerfiles patch `export_experiment_data.py` to use `DOT_PIOREACTOR` instead of relative paths.
-5. **Emulator starts idle**: The emulator container starts with `sleep infinity`. You must run `docker compose exec -d emulator python -m emulator.cli start` to begin simulation.
-6. **Emulator reset**: Use `docker compose run --rm emulator reset` (not `exec`) — the container must be running but the emulator process must not be active.
+5. **Emulator starts idle**: The emulator container starts with `sleep infinity`. You must run `./emu start` (or `docker compose exec -d emulator python -m emulator.cli start`) to begin simulation.
+6. **Emulator reset**: `./emu reset` execs the CLI inside the running container — the container must be up (`./emu up`) but the simulator process must not be active. `reset` is not detachable (`-d` is rejected).
 
 ## Credits
 

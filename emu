@@ -1,0 +1,106 @@
+#!/usr/bin/env bash
+# Shortcut for driving the emulator service without typing
+# `docker compose exec emulator python -m emulator.cli ...`
+#
+#   ./emu up               start the emulator container
+#   ./emu start            start the simulation (foreground)
+#   ./emu start -d         start the simulation detached
+#   ./emu start --resume   resume from the last checkpoint
+#   ./emu stop             graceful stop (stop flag, exits on next loop)
+#   ./emu status           is the simulation running?
+#   ./emu reset            clear state + model runtime files
+#   ./emu logs [-f] [N]    tail emulator/state/emulator.log (host copy)
+
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$ROOT"
+
+SERVICE=emulator
+CLI=(python -m emulator.cli)
+LOG_FILE="emulator/state/emulator.log"
+
+DETACH=0
+FOLLOW=0
+LINES=50
+CMD=""
+EXTRA=()
+
+usage() {
+    sed -n '2,12p' "$ROOT/emu" | sed 's/^# \{0,1\}//'
+}
+
+die() {
+    echo "emu: $*" >&2
+    exit 1
+}
+
+# Split args: flags anywhere, first bare word is the subcommand
+while [ $# -gt 0 ]; do
+    case "$1" in
+        -d|--detach) DETACH=1 ;;
+        -f|--follow) FOLLOW=1 ;;
+        -h|--help)   usage; exit 0 ;;
+        -*)          EXTRA+=("$1") ;;
+        *)
+            if [ -z "$CMD" ]; then
+                CMD="$1"
+            else
+                EXTRA+=("$1")
+            fi
+            ;;
+    esac
+    shift
+done
+
+[ "${#EXTRA[@]}" -gt 0 ] && LINES="${EXTRA[0]}"
+
+container_running() {
+    docker compose ps --status running --services 2>/dev/null | grep -qx "$SERVICE"
+}
+
+require_container() {
+    if container_running; then
+        return 0
+    fi
+    if docker compose ps -a --services 2>/dev/null | grep -qx "$SERVICE"; then
+        die "'$SERVICE' container exists but is not running — start it with: ./emu up"
+    fi
+    die "'$SERVICE' container does not exist — create it with: ./emu up"
+}
+
+run_cli() {
+    local detach_flag=()
+    [ "$DETACH" = 1 ] && detach_flag=(-d)
+    docker compose exec "${detach_flag[@]}" "$SERVICE" "${CLI[@]}" "$CMD" "${EXTRA[@]:+${EXTRA[@]}}"
+}
+
+case "${CMD:-}" in
+    ""|help)
+        usage
+        ;;
+
+    up)
+        docker compose up -d "$SERVICE"
+        ;;
+
+    start|stop|status|reset)
+        [ "$CMD" = reset ] && [ "$DETACH" = 1 ] && die "reset does not support -d"
+        require_container
+        [ "$CMD" = start ] && [ "$DETACH" = 1 ] && echo "Starting emulator detached — follow it with: ./emu logs -f"
+        run_cli
+        ;;
+
+    logs)
+        [ -f "$LOG_FILE" ] || die "log not found: $LOG_FILE (start the emulator first)"
+        if [ "$FOLLOW" = 1 ]; then
+            tail -n "$LINES" -f "$LOG_FILE"
+        else
+            tail -n "$LINES" "$LOG_FILE"
+        fi
+        ;;
+
+    *)
+        die "unknown command '$CMD' (try: ./emu --help)"
+        ;;
+esac
