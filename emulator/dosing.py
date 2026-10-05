@@ -15,6 +15,20 @@ DEFAULT_YAML_PATH = "/home/pioreactor/.pioreactor/experiment_profiles/profile_up
 # reads do not push the scheduled doses forward in time.
 _yaml_cache = {"hash": None, "mtime": None, "profiles": None, "warned": None}
 
+# Cap the per-unit value lists written to the log, so a profile with hundreds of
+# actions cannot produce a 10 kB line.
+MAX_LOGGED_VALUES = 20
+
+
+def _fmt_values(values):
+    """Format a list of floats for the log, eliding the middle when too long."""
+    vals = [round(v, 6) for v in values]
+    if len(vals) <= MAX_LOGGED_VALUES:
+        return ", ".join(map(str, vals))
+    head = ", ".join(map(str, vals[:5]))
+    tail = ", ".join(map(str, vals[-5:]))
+    return f"{head}, ... ({len(vals) - 10} omitted) ..., {tail}"
+
 
 def _get_acceleration():
     try:
@@ -91,11 +105,34 @@ def _load_yaml_profile(model_dir, brxtor_list, sim_time):
     _yaml_cache["mtime"] = mtime
     _yaml_cache["profiles"] = profiles
     _yaml_cache["warned"] = None
-    parts = [f"{u}={len(p['time_feed'])} pulses" for u, p in profiles.items()]
+
+    # n_dup is computed on the absolute list, so it is exact: every action shares
+    # the same anchor, so repeated `t` values in the YAML stay repeated after the
+    # shift. `absolute` is what reaches EMULATOR_design.json, db_emulator.json and
+    # MQTT; `t` is recovered from it so the profile content stays auditable once
+    # the YAML has been overwritten.
+    dup_units = []
+    parts = []
+    for unit, p in profiles.items():
+        times = p["time_feed"]
+        n_dup = len(times) - len(set(times))
+        if n_dup:
+            dup_units.append(f"{unit}={n_dup}")
+        parts.append(
+            f"{unit}: {len(times)} actions, {n_dup} duplicate t, "
+            f"t=[{_fmt_values([t - sim_time for t in times])}], "
+            f"absolute=[{_fmt_values(times)}]"
+        )
+
     log.info(
-        f"Loaded feed profile from YAML (anchored at sim_time={sim_time:.4f}h): "
-        f"{', '.join(parts)}"
+        f"Loaded feed profile from YAML (anchored at sim_time={sim_time:.6f}h): "
+        + "; ".join(parts)
     )
+    if dup_units:
+        log.warning(
+            "Feed profile YAML has repeated action times "
+            f"(they will be injected and recorded once per action): {', '.join(dup_units)}"
+        )
     return profiles
 
 
