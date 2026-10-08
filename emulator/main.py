@@ -99,7 +99,6 @@ def run(start_from_checkpoint=False):
     start_EXP, run_emu = _load_model_modules()
 
     experiment_duration = config["experiment_duration"]
-    time_execution = config.get("time_execution", [])
 
     if not start_from_checkpoint:
         log.info("Cleaning database...")

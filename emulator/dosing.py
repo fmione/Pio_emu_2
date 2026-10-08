@@ -37,7 +37,7 @@ def _get_acceleration():
         return 1
 
 
-def _get_sim_time(model_dir):
+def _get_sim_time(model_dir, absolute_time=None):
     try:
         with open(os.path.join(model_dir, 'EMULATOR_design.json')) as json_file:
             EMULATOR_design = json.load(json_file)
@@ -45,11 +45,7 @@ def _get_sim_time(model_dir):
         acceleration = _get_acceleration()
 
         time_start_absolute = EMULATOR_design['time_start_absolute']
-
-        if acceleration != 1 and _yaml_cache.get("mtime") != None:
-            time_final_absolute = _yaml_cache.get("mtime")
-        else:
-            time_final_absolute = time.time()
+        time_final_absolute = time.time() if absolute_time is None else absolute_time
 
         time_final = acceleration * (time_final_absolute - time_start_absolute) / 3600
         return time_final
@@ -65,7 +61,7 @@ def _import_yaml_to_profile(model_dir):
     return yaml_to_profile
 
 
-def _load_yaml_profile(model_dir, brxtor_list, sim_time):
+def _load_yaml_profile(model_dir, brxtor_list):
     """
     Load feed pulses from profile_update.yaml (times relative to the moment
     the file was written). The file is re-anchored to the current simulation
@@ -88,12 +84,14 @@ def _load_yaml_profile(model_dir, brxtor_list, sim_time):
     if digest == _yaml_cache["hash"] and mtime == _yaml_cache["mtime"]:
         return _yaml_cache["profiles"]
 
+    yaml_sim_time = None
     try:
         yaml_to_profile = _import_yaml_to_profile(model_dir)
         profiles = {}
         for unit in brxtor_list:
+            yaml_sim_time = _get_sim_time(model_dir, mtime)
             profiles[unit] = yaml_to_profile(
-                yaml_path, time_current=sim_time, pioreactor_list=[unit]
+                yaml_path, time_current=yaml_sim_time, pioreactor_list=[unit]
             )[unit]
     except Exception as e:
         if _yaml_cache["warned"] != digest:
@@ -106,11 +104,7 @@ def _load_yaml_profile(model_dir, brxtor_list, sim_time):
     _yaml_cache["profiles"] = profiles
     _yaml_cache["warned"] = None
 
-    # n_dup is computed on the absolute list, so it is exact: every action shares
-    # the same anchor, so repeated `t` values in the YAML stay repeated after the
-    # shift. `absolute` is what reaches EMULATOR_design.json, db_emulator.json and
-    # MQTT; `t` is recovered from it so the profile content stays auditable once
-    # the YAML has been overwritten.
+    # log YAML profiles
     dup_units = []
     parts = []
     for unit, p in profiles.items():
@@ -120,12 +114,12 @@ def _load_yaml_profile(model_dir, brxtor_list, sim_time):
             dup_units.append(f"{unit}={n_dup}")
         parts.append(
             f"{unit}: {len(times)} actions, {n_dup} duplicate t, "
-            f"t=[{_fmt_values([t - sim_time for t in times])}], "
+            f"t=[{_fmt_values([t - yaml_sim_time for t in times])}], "
             f"absolute=[{_fmt_values(times)}]"
         )
 
     log.info(
-        f"Loaded feed profile from YAML (anchored at sim_time={sim_time:.6f}h): "
+        f"Loaded feed profile from YAML (anchored at sim_time={yaml_sim_time:.6f}h): "
         + "; ".join(parts)
     )
     if dup_units:
@@ -173,13 +167,8 @@ def load_and_update_design(model_dir, start_datetime, brxtor_list):
 
     acceleration = _get_acceleration()
 
-    sim_time = None
     if acceleration != 1:
-        sim_time = _get_sim_time(model_dir)
-        if sim_time is None:
-            log.warning("EMULATOR_state.json missing or invalid, skipping feed profile update")
-            return
-        dosing_data = _load_yaml_profile(model_dir, brxtor_list, sim_time)
+        dosing_data = _load_yaml_profile(model_dir, brxtor_list)
     else:
         dosing_data = get_dosing_events(start_datetime)
 
@@ -194,6 +183,14 @@ def load_and_update_design(model_dir, start_datetime, brxtor_list):
         return
 
     updated = False
+
+    sim_time = None
+    if acceleration != 1:
+        sim_time = _get_sim_time(model_dir)
+        if sim_time is None:
+            log.warning(f"Failed to load sim_time from EMULATOR_design")
+            return
+
     for unit in brxtor_list:
         if unit not in dosing_data or unit not in design:
             continue
