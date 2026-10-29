@@ -154,6 +154,8 @@ def run(start_from_checkpoint=False):
                 log.info("Stop flag detected, exiting gracefully")
                 break
 
+            time.sleep(interval_seconds)
+
             load_and_update_design(MODEL_DIR, start_datetime, config["Brxtor_list"])
             run_emu()
 
@@ -171,8 +173,6 @@ def run(start_from_checkpoint=False):
                 log.info(f"Experiment complete: sim_time={sim_time:.4f}h >= {experiment_duration}h")
                 end_experiment(config["exp_name"])
                 break
-
-            time.sleep(interval_seconds)
 
     except KeyboardInterrupt:
         log.info("Interrupted by user")

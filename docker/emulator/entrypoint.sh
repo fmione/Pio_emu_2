@@ -3,9 +3,19 @@ set -e
 
 EMULATOR_UID="${EMULATOR_UID:-1000}"
 
-# 1. Permisos y Samba (corre como root)
+# 1. Permisos (corre como root)
 chown -R ${EMULATOR_UID}:${EMULATOR_UID} /app/model /app/state
-smbd --daemon
+
+# 2. SSH / SFTP server (corre como root)
+mkdir -p /run/sshd
+ssh-keygen -A 2>/dev/null || true
+if ! id "emulator" &>/dev/null; then
+    useradd -m -s /bin/bash emulator
+fi
+echo "emulator:emu3657" | chpasswd
+sed -i 's/#PasswordAuthentication yes/PasswordAuthentication yes/' /etc/ssh/sshd_config 2>/dev/null || true
+sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin no/' /etc/ssh/sshd_config 2>/dev/null || true
+/usr/sbin/sshd
 
 # Helper: ejecutar como EMULATOR_UID
 run_as_user() {

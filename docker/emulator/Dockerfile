@@ -1,7 +1,7 @@
 FROM python:3.13-slim
 
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends gcc tzdata samba && \
+    apt-get install -y --no-install-recommends gcc tzdata openssh-server passwd && \
     rm -rf /var/lib/apt/lists/*
 
 RUN useradd -u 1000 -m pioreactor || true
@@ -11,7 +11,6 @@ RUN pip install --no-cache-dir numpy scipy pandas paho-mqtt pyyaml
 WORKDIR /app
 
 COPY emulator/ /app/emulator/
-COPY docker/emulator/smb.conf /etc/samba/smb.conf
 COPY docker/emulator/entrypoint.sh /app/entrypoint-emulator.sh
 RUN chmod +x /app/entrypoint-emulator.sh
 
